@@ -1,0 +1,6 @@
+Check,Pass
+Each strategy has four annual returns,True
+Every annual weight set sums to 100%,True
+Every annual target allocation sums to ₹1 Crore,True
+No negative weights,True
+No weight exceeds cap,True
