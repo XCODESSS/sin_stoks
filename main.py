@@ -24,10 +24,10 @@ COMPANIES = {
 
     # Social Media
     "META": ("Meta Platforms", "Social Media"),
-    "PINS": ("Pinterest", "Social Media"),
+    "RDDT": ("Reddit", "Social Media"),
     "SNAP": ("Snap Inc.", "Social Media"),
     "TCEHY": ("Tencent", "Social Media"),
-    "BIDU": ("Baidu", "Social Media"),
+    "MSFT": ("Microsoft", "Social Media"),
 
     # Tobacco & Nicotine
     "PM": ("Philip Morris", "Tobacco & Nicotine"),
@@ -54,7 +54,7 @@ COMPANIES = {
 # The user-facing universe is retained as supplied. This replacement uses the
 # current exchange symbol for the one company whose original symbol isn't
 # reliably available on Yahoo Finance.
-SOURCE_TICKERS = {"PRMBF": "RI.PA"}
+SOURCE_TICKERS = {"PRMBF": "PDRDY"}
 START_DATE = "2020-01-01"
 END_DATE = "2026-01-01"
 YEARS = list(range(2020, 2026))
@@ -97,6 +97,12 @@ def calculate_total_returns(annual_returns: pd.DataFrame) -> tuple[pd.Series, fl
     )
     combined_yearly_returns = annual_returns.mean(axis=0, skipna=True).div(100)
     combined_total_return = (1 + combined_yearly_returns).prod() - 1
+
+    # surfaces any year where the universe isn't actually all 30
+    coverage = annual_returns.notna().sum(axis=0)
+    print("\nCompanies contributing per year:")
+    print(coverage)
+
     return per_company_total_return, float(combined_total_return)
 
 

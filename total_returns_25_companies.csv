@@ -3,17 +3,17 @@ DEO,Diageo,Alcohol,-39.14
 BUD,Anheuser-Busch InBev,Alcohol,-17.49
 STZ,Constellation Brands,Alcohol,-19.1
 BF-B,Brown-Forman,Alcohol,-56.77
-PRMBF,Pernod Ricard,Alcohol,-45.56
+PRMBF,Pernod Ricard,Alcohol,
 MNST,Monster Beverage,Energy Drinks,140.72
 CELH,Celsius Holdings,Energy Drinks,2788.84
 KDP,Keurig Dr Pepper,Energy Drinks,11.92
 PEP,PepsiCo,Energy Drinks,26.88
 KO,Coca-Cola,Energy Drinks,52.83
 META,Meta Platforms,Social Media,216.86
-PINS,Pinterest,Social Media,37.71
+RDDT,Reddit,Social Media,355.73
 SNAP,Snap Inc.,Social Media,-51.91
 TCEHY,Tencent,Social Media,71.29
-BIDU,Baidu,Social Media,-5.47
+MSFT,Microsoft,Social Media,217.12
 PM,Philip Morris,Tobacco & Nicotine,155.58
 BTI,British American Tobacco,Tobacco & Nicotine,110.42
 MO,Altria,Tobacco & Nicotine,88.92
@@ -29,4 +29,4 @@ CMG,Chipotle Mexican Grill,Quick Service Restaurants,115.57
 YUM,Yum! Brands,Quick Service Restaurants,65.65
 DPZ,Domino's Pizza,Quick Service Restaurants,52.63
 QSR,Restaurant Brands International,Quick Service Restaurants,30.4
-PORTFOLIO,All Stocks Combined,Portfolio,140.33
+PORTFOLIO,All Stocks Combined,Portfolio,178.43
