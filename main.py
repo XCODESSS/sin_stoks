@@ -8,46 +8,71 @@ import yfinance as yf
 
 
 COMPANIES = {
+    # Alcohol
     "DEO": ("Diageo", "Alcohol"),
     "BUD": ("Anheuser-Busch InBev", "Alcohol"),
     "STZ": ("Constellation Brands", "Alcohol"),
     "BF-B": ("Brown-Forman", "Alcohol"),
     "PRMBF": ("Pernod Ricard", "Alcohol"),
+
+    # Energy Drinks
     "MNST": ("Monster Beverage", "Energy Drinks"),
     "CELH": ("Celsius Holdings", "Energy Drinks"),
     "KDP": ("Keurig Dr Pepper", "Energy Drinks"),
     "PEP": ("PepsiCo", "Energy Drinks"),
     "KO": ("Coca-Cola", "Energy Drinks"),
+
+    # Social Media
     "META": ("Meta Platforms", "Social Media"),
     "PINS": ("Pinterest", "Social Media"),
     "SNAP": ("Snap Inc.", "Social Media"),
-    "RDDT": ("Reddit", "Social Media"),
+    "TCEHY": ("Tencent", "Social Media"),
     "BIDU": ("Baidu", "Social Media"),
+
+    # Tobacco & Nicotine
     "PM": ("Philip Morris", "Tobacco & Nicotine"),
     "BTI": ("British American Tobacco", "Tobacco & Nicotine"),
     "MO": ("Altria", "Tobacco & Nicotine"),
     "UVV": ("Universal Corporation", "Tobacco & Nicotine"),
     "TPB": ("Turning Point Brands", "Tobacco & Nicotine"),
-    "MTCH": ("Match Group", "Dating Apps"),
-    "BMBL": ("Bumble", "Dating Apps"),
-    "LOV": ("Spark Networks", "Dating Apps"),
-    "PSM.DE": ("ProSiebenSat.1 Media", "Dating Apps"),
-    "MTY": ("MTY Food Group", "Dating Apps"),
+
+    # Gaming
+    "NTDOY": ("Nintendo", "Gaming"),
+    "EA": ("Electronic Arts", "Gaming"),
+    "TTWO": ("Take-Two Interactive", "Gaming"),
+    "CCOEY": ("Capcom", "Gaming"),
+    "NCBDY": ("Bandai Namco", "Gaming"),
+
+    # Quick Service Restaurants
+    "MCD": ("McDonald's", "Quick Service Restaurants"),
+    "CMG": ("Chipotle Mexican Grill", "Quick Service Restaurants"),
+    "YUM": ("Yum! Brands", "Quick Service Restaurants"),
+    "DPZ": ("Domino's Pizza", "Quick Service Restaurants"),
+    "QSR": ("Restaurant Brands International", "Quick Service Restaurants"),
 }
 
-# The user-facing universe is retained as supplied. These replacements use the
-# current exchange symbols for companies whose original symbols are unavailable.
-SOURCE_TICKERS = {"PRMBF": "RI.PA", "MTY": "MTY.TO"}
+# The user-facing universe is retained as supplied. This replacement uses the
+# current exchange symbol for the one company whose original symbol isn't
+# reliably available on Yahoo Finance.
+SOURCE_TICKERS = {"PRMBF": "RI.PA"}
 START_DATE = "2020-01-01"
 END_DATE = "2026-01-01"
 YEARS = list(range(2020, 2026))
 
 
-def extract_close_prices(data: pd.DataFrame, source_ticker: str) -> pd.Series:
-    """Return a one-dimensional adjusted closing-price series."""
-    close = data["Close"]
-    if isinstance(close, pd.DataFrame):
-        close = close[source_ticker] if source_ticker in close.columns else close.iloc[:, 0]
+def extract_close_prices(close_data: pd.DataFrame | pd.Series, source_ticker: str) -> pd.Series:
+    """Return a one-dimensional adjusted closing-price series for one ticker.
+
+    close_data is the full "Close" block returned by a batch yf.download() call
+    (a DataFrame with one column per ticker), or a Series if only one ticker
+    was requested.
+    """
+    if isinstance(close_data, pd.DataFrame):
+        if source_ticker not in close_data.columns:
+            return pd.Series(dtype=float)
+        close = close_data[source_ticker]
+    else:
+        close = close_data
     return close.dropna()
 
 
@@ -72,31 +97,37 @@ def calculate_total_returns(annual_returns: pd.DataFrame) -> tuple[pd.Series, fl
     )
     combined_yearly_returns = annual_returns.mean(axis=0, skipna=True).div(100)
     combined_total_return = (1 + combined_yearly_returns).prod() - 1
-    combined_portfolio_return = (1 + combined_yearly_returns).prod() - 1
-    return combined_portfolio_return, combined_total_return
     return per_company_total_return, float(combined_total_return)
 
 
 def main() -> None:
-    returns_by_ticker: dict[str, pd.Series] = {}
 
+    source_tickers = [SOURCE_TICKERS.get(ticker, ticker) for ticker in COMPANIES]
+
+    print(f"Downloading {len(source_tickers)} tickers in one batch...")
+    data = yf.download(
+        source_tickers,
+        start=START_DATE,
+        end=END_DATE,
+        auto_adjust=True,
+        progress=True,
+        group_by="column",  
+    )
+
+    if data.empty:
+        raise RuntimeError("Batch download returned no data at all — check your connection or tickers.")
+
+    close_data = data["Close"]
+
+    returns_by_ticker: dict[str, pd.Series] = {}
     for ticker in COMPANIES:
         source_ticker = SOURCE_TICKERS.get(ticker, ticker)
-        print(f"Processing {ticker} ({source_ticker})...")
+        close = extract_close_prices(close_data, source_ticker)
+        if close.empty:
+            print(f"No data available for {ticker} ({source_ticker}).")
+            continue
         try:
-            data = yf.download(
-                source_ticker,
-                start=START_DATE,
-                end=END_DATE,
-                auto_adjust=True,
-                progress=False,
-            )
-            if data.empty:
-                print(f"No data available for {ticker}.")
-                continue
-            returns_by_ticker[ticker] = calculate_annual_returns(
-                extract_close_prices(data, source_ticker)
-            )
+            returns_by_ticker[ticker] = calculate_annual_returns(close)
         except Exception as error:
             print(f"{ticker}: {error}")
 

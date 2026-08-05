@@ -12,16 +12,21 @@ KO,Coca-Cola,Energy Drinks,52.83
 META,Meta Platforms,Social Media,216.86
 PINS,Pinterest,Social Media,37.71
 SNAP,Snap Inc.,Social Media,-51.91
-RDDT,Reddit,Social Media,355.73
+TCEHY,Tencent,Social Media,71.29
 BIDU,Baidu,Social Media,-5.47
 PM,Philip Morris,Tobacco & Nicotine,155.58
 BTI,British American Tobacco,Tobacco & Nicotine,110.42
 MO,Altria,Tobacco & Nicotine,88.92
 UVV,Universal Corporation,Tobacco & Nicotine,33.75
 TPB,Turning Point Brands,Tobacco & Nicotine,304.99
-MTCH,Match Group,Dating Apps,-60.74
-BMBL,Bumble,Dating Apps,-94.92
-LOV,Spark Networks,Dating Apps,
-PSM.DE,ProSiebenSat.1 Media,Dating Apps,-60.76
-MTY,MTY Food Group,Dating Apps,-24.95
-PORTFOLIO,All Stocks Combined,Portfolio,116.48
+NTDOY,Nintendo,Gaming,68.4
+EA,Electronic Arts,Gaming,95.78
+TTWO,Take-Two Interactive,Gaming,109.72
+CCOEY,Capcom,Gaming,235.67
+NCBDY,Bandai Namco,Gaming,37.08
+MCD,McDonald's,Quick Service Restaurants,74.88
+CMG,Chipotle Mexican Grill,Quick Service Restaurants,115.57
+YUM,Yum! Brands,Quick Service Restaurants,65.65
+DPZ,Domino's Pizza,Quick Service Restaurants,52.63
+QSR,Restaurant Brands International,Quick Service Restaurants,30.4
+PORTFOLIO,All Stocks Combined,Portfolio,140.33
