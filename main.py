@@ -49,6 +49,9 @@ COMPANIES = {
     "YUM": ("Yum! Brands", "Quick Service Restaurants"),
     "DPZ": ("Domino's Pizza", "Quick Service Restaurants"),
     "QSR": ("Restaurant Brands International", "Quick Service Restaurants"),
+
+    #Benchmark
+    "SPY": ("S&P 500 ETF", "Benchmark"),
 }
 
 # The user-facing universe is retained as supplied. This replacement uses the
