@@ -3,7 +3,7 @@ DEO,Diageo,Alcohol,-2.29,41.72,-17.4,-16.28,-10.09,-29.31
 BUD,Anheuser-Busch InBev,Alcohol,-15.42,-12.66,0.12,9.04,-21.37,30.12
 STZ,Constellation Brands,Alcohol,18.32,16.12,-6.43,5.83,-7.11,-35.99
 BF-B,Brown-Forman,Alcohol,19.63,-6.07,-8.86,-11.9,-32.23,-29.29
-PRMBF,Pernod Ricard,Alcohol,,,,,,
+PRNDY,Pernod Ricard,Alcohol,8.67,28.45,-17.06,-7.89,-33.68,-21.76
 MNST,Monster Beverage,Energy Drinks,45.18,3.85,5.72,13.48,-8.77,45.87
 CELH,Celsius Holdings,Energy Drinks,959.16,48.22,39.52,57.21,-51.69,73.65
 KDP,Keurig Dr Pepper,Energy Drinks,13.26,17.49,-1.23,-4.24,-1.05,-10.14
@@ -29,3 +29,4 @@ CMG,Chipotle Mexican Grill,Quick Service Restaurants,61.59,26.07,-20.64,64.83,31
 YUM,Yum! Brands,Quick Service Restaurants,8.3,30.05,-5.99,3.93,4.72,14.94
 DPZ,Domino's Pizza,Quick Service Restaurants,31.8,48.39,-37.88,20.69,3.18,0.88
 QSR,Restaurant Brands International,Quick Service Restaurants,-1.77,2.72,10.72,24.64,-13.8,8.64
+SPY,S&P 500 ETF,Benchmark,17.24,28.73,-18.18,26.18,24.89,17.72
