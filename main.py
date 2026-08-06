@@ -34,7 +34,7 @@ COMPANIES = {
     "KO": ("Coca-Cola", "Energy Drinks"),
     # Social Media
     "META": ("Meta Platforms", "Social Media"),
-    "RDDT": ("Reddit", "Social Media"),
+    "GOOGL": ("Alphabet", "Social Media"),
     "SNAP": ("Snap Inc.", "Social Media"),
     "TCEHY": ("Tencent", "Social Media"),
     "MSFT": ("Microsoft", "Social Media"),
@@ -64,7 +64,7 @@ PORTFOLIO_TICKERS = [t for t, (_, s) in COMPANIES.items() if s != "Benchmark"]
 BENCHMARK_TICKERS = {t for t, (_, s) in COMPANIES.items() if s == "Benchmark"}
 ALL_TICKERS = list(COMPANIES.keys())
 
-START_DATE = "2020-01-01"
+START_DATE = "2016-01-01"
 END_DATE = "2026-01-01"
 YEARS = list(range(2020, 2026))
 
@@ -195,7 +195,7 @@ def validate_coverage(
 
 
 def download_monthly_returns() -> pd.DataFrame:
-    """Download monthly close prices and compute simple monthly returns.
+    """Download monthly close prices and compute monthly log returns.
 
     Returns a DataFrame of shape (months, tickers) with monthly percentage
     returns suitable for covariance matrix estimation.
@@ -216,8 +216,8 @@ def download_monthly_returns() -> pd.DataFrame:
 
     close = data["Close"]
 
-    # Simple monthly returns (not log — keeps consistency with annual calc)
-    monthly_returns = close.pct_change().iloc[1:]  # drop first NaN row
+    # Log monthly returns for covariance estimation.
+    monthly_returns = np.log(close / close.shift(1)).iloc[1:]  # drop first NaN row
 
     # Flatten any MultiIndex columns
     if isinstance(monthly_returns.columns, pd.MultiIndex):
@@ -230,6 +230,24 @@ def download_monthly_returns() -> pd.DataFrame:
         print(f"  Short-history tickers: {dict(short)}")
 
     return monthly_returns
+
+
+def _write_csv_outputs_atomically(outputs: dict[Path, tuple[pd.DataFrame, dict[str, object]]]) -> None:
+    temp_paths: dict[Path, Path] = {}
+    try:
+        for target, (frame, csv_kwargs) in outputs.items():
+            temp_path = target.with_name(f"{target.name}.tmp")
+            if temp_path.exists():
+                temp_path.unlink()
+            frame.to_csv(temp_path, **csv_kwargs)
+            temp_paths[target] = temp_path
+
+        for target, temp_path in temp_paths.items():
+            temp_path.replace(target)
+    finally:
+        for temp_path in temp_paths.values():
+            if temp_path.exists():
+                temp_path.unlink()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -324,24 +342,28 @@ def main() -> None:
         ignore_index=True,
     )
 
-    # ── 6. Save annual + total returns ───────────────────────────────────
-    annual_returns.to_csv(DATA_DIR / "annual_returns.csv")
-    total_returns.to_csv(DATA_DIR / "total_returns.csv", index=False)
-    coverage_report.to_csv(DATA_DIR / "coverage_report.csv", index=False)
+    # ── 6. Download monthly returns before writing any outputs ──────────
+    monthly_returns = download_monthly_returns()
+
+    # ── 7. Save the complete output set atomically ──────────────────────
+    _write_csv_outputs_atomically(
+        {
+            DATA_DIR / "annual_returns.csv": (annual_returns, {}),
+            DATA_DIR / "total_returns.csv": (total_returns, {"index": False}),
+            DATA_DIR / "coverage_report.csv": (coverage_report, {"index": False}),
+            DATA_DIR / "monthly_returns.csv": (monthly_returns, {}),
+        }
+    )
 
     print(f"\n  Saved → {DATA_DIR / 'annual_returns.csv'}")
     print(f"  Saved → {DATA_DIR / 'total_returns.csv'}")
     print(f"  Saved → {DATA_DIR / 'coverage_report.csv'}")
-
-    # ── 7. Download & save monthly returns ───────────────────────────────
-    monthly_returns = download_monthly_returns()
-    monthly_returns.to_csv(DATA_DIR / "monthly_returns.csv")
     print(f"  Saved → {DATA_DIR / 'monthly_returns.csv'}")
 
-    _extracted_from_main_94("ANNUAL RETURNS (%)")
+    _print_summary_heading("ANNUAL RETURNS (%)")
     print(annual_returns.to_string())
 
-    _extracted_from_main_94("TOTAL RETURNS (%)")
+    _print_summary_heading("TOTAL RETURNS (%)")
     print(total_returns.to_string(index=False))
 
     print(f"\n  Combined Total Return: {combined_total_return:.2%}")
@@ -349,11 +371,10 @@ def main() -> None:
     print("=" * 70)
 
 
-# TODO Rename this here and in `main`
-def _extracted_from_main_94(arg0):
+def _print_summary_heading(title: str) -> None:
     # ── 8. Summary tables ────────────────────────────────────────────────
     print("\n" + "=" * 70)
-    print(arg0)
+    print(title)
     print("=" * 70)
 
 

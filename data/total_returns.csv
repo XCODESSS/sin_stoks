@@ -1,0 +1,33 @@
+Ticker,Company,Sector,Total Return (%)
+DEO,Diageo,Alcohol,-39.74
+BUD,Anheuser-Busch InBev,Alcohol,-16.07
+STZ,Constellation Brands,Alcohol,-19.72
+BF-B,Brown-Forman,Alcohol,-57.11
+PRNDY,Pernod Ricard,Alcohol,-44.71
+MNST,Monster Beverage,Energy Drinks,141.29
+CELH,Celsius Holdings,Energy Drinks,2740.99
+KDP,Keurig Dr Pepper,Energy Drinks,11.69
+PEP,PepsiCo,Energy Drinks,26.09
+KO,Coca-Cola,Energy Drinks,51.83
+META,Meta Platforms,Social Media,223.85
+GOOGL,Alphabet,Social Media,370.91
+SNAP,Snap Inc.,Social Media,-50.58
+TCEHY,Tencent,Social Media,77.96
+MSFT,Microsoft,Social Media,222.99
+PM,Philip Morris,Tobacco & Nicotine,155.88
+BTI,British American Tobacco,Tobacco & Nicotine,112.45
+MO,Altria,Tobacco & Nicotine,86.42
+UVV,Universal Corporation,Tobacco & Nicotine,33.33
+TPB,Turning Point Brands,Tobacco & Nicotine,296.64
+NTDOY,Nintendo,Gaming,71.07
+EA,Electronic Arts,Gaming,95.47
+TTWO,Take-Two Interactive,Gaming,109.12
+CCOEY,Capcom,Gaming,234.23
+NCBDY,Bandai Namco,Gaming,37.08
+MCD,McDonald's,Quick Service Restaurants,77.7
+CMG,Chipotle Mexican Grill,Quick Service Restaurants,121.0
+YUM,Yum! Brands,Quick Service Restaurants,68.02
+DPZ,Domino's Pizza,Quick Service Restaurants,52.43
+QSR,Restaurant Brands International,Quick Service Restaurants,32.31
+SPY,S&P 500 ETF,Benchmark,131.21
+PORTFOLIO,Equal-Weight Portfolio,Portfolio,156.48
