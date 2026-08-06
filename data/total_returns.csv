@@ -1,33 +1,33 @@
-Ticker,Company,Sector,Total Return (%)
-DEO,Diageo,Alcohol,-39.74
-BUD,Anheuser-Busch InBev,Alcohol,-16.07
-STZ,Constellation Brands,Alcohol,-19.72
-BF-B,Brown-Forman,Alcohol,-57.11
-PRNDY,Pernod Ricard,Alcohol,-44.71
-MNST,Monster Beverage,Energy Drinks,141.29
-CELH,Celsius Holdings,Energy Drinks,2740.99
-KDP,Keurig Dr Pepper,Energy Drinks,11.69
-PEP,PepsiCo,Energy Drinks,26.09
-KO,Coca-Cola,Energy Drinks,51.83
-META,Meta Platforms,Social Media,223.85
-GOOGL,Alphabet,Social Media,370.91
-SNAP,Snap Inc.,Social Media,-50.58
-TCEHY,Tencent,Social Media,77.96
-MSFT,Microsoft,Social Media,222.99
-PM,Philip Morris,Tobacco & Nicotine,155.88
-BTI,British American Tobacco,Tobacco & Nicotine,112.45
-MO,Altria,Tobacco & Nicotine,86.42
-UVV,Universal Corporation,Tobacco & Nicotine,33.33
-TPB,Turning Point Brands,Tobacco & Nicotine,296.64
-NTDOY,Nintendo,Gaming,71.07
-EA,Electronic Arts,Gaming,95.47
-TTWO,Take-Two Interactive,Gaming,109.12
-CCOEY,Capcom,Gaming,234.23
-NCBDY,Bandai Namco,Gaming,37.08
-MCD,McDonald's,Quick Service Restaurants,77.7
-CMG,Chipotle Mexican Grill,Quick Service Restaurants,121.0
-YUM,Yum! Brands,Quick Service Restaurants,68.02
-DPZ,Domino's Pizza,Quick Service Restaurants,52.43
-QSR,Restaurant Brands International,Quick Service Restaurants,32.31
-SPY,S&P 500 ETF,Benchmark,131.21
-PORTFOLIO,Equal-Weight Portfolio,Portfolio,156.48
+Ticker,Company,Sector,Total Return (%),CAGR (%)
+DEO,Diageo,Alcohol,4.31,0.4228620360408941
+BUD,Anheuser-Busch InBev,Alcohol,-35.98,-4.361761839623391
+STZ,Constellation Brands,Alcohol,13.69,1.2913190378292638
+BF-B,Brown-Forman,Alcohol,-19.95,-2.2006127842460588
+PRNDY,Pernod Ricard,Alcohol,-4.04,-0.4115383306600995
+MNST,Monster Beverage,Energy Drinks,218.71,12.289608854752277
+CELH,Celsius Holdings,Energy Drinks,6865.48,52.860439864353026
+KDP,Keurig Dr Pepper,Energy Drinks,136.31,8.980352929322422
+PEP,PepsiCo,Energy Drinks,96.42,6.983935723149459
+KO,Coca-Cola,Energy Drinks,125.77,8.484233123214867
+META,Meta Platforms,Social Media,550.27,20.589465956243068
+GOOGL,Alphabet,Social Media,730.52,23.576249258172965
+SNAP,Snap Inc.,Social Media,-67.03,-10.50229584094634
+TCEHY,Tencent,Social Media,351.2,16.26176427451915
+MSFT,Microsoft,Social Media,907.89,25.99151947829428
+PM,Philip Morris,Tobacco & Nicotine,202.98,11.722693153140828
+BTI,British American Tobacco,Tobacco & Nicotine,105.62,7.474772746329683
+MO,Altria,Tobacco & Nicotine,95.88,6.954487132637821
+UVV,Universal Corporation,Tobacco & Nicotine,62.63,4.983262803820376
+TPB,Turning Point Brands,Tobacco & Nicotine,1036.07,27.508902934682666
+NTDOY,Nintendo,Gaming,394.85,17.340344103086423
+EA,Electronic Arts,Gaming,217.93,12.262097165656805
+TTWO,Take-Two Interactive,Gaming,649.28,22.310689394128367
+CCOEY,Capcom,Gaming,657.44,22.443242982007327
+NCBDY,Bandai Namco,Gaming,78.98,5.993797067084183
+MCD,McDonald's,Quick Service Restaurants,231.59,12.735356485533078
+CMG,Chipotle Mexican Grill,Quick Service Restaurants,312.2,15.215470782835583
+YUM,Yum! Brands,Quick Service Restaurants,251.22,13.385605562760293
+DPZ,Domino's Pizza,Quick Service Restaurants,326.22,15.601476873409093
+QSR,Restaurant Brands International,Quick Service Restaurants,159.56,10.007875244831176
+SPY,S&P 500 ETF,Benchmark,300.25,14.88
+PORTFOLIO,Equal-Weight Portfolio,Portfolio,408.83,17.67

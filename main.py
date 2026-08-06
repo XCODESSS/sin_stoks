@@ -66,7 +66,7 @@ ALL_TICKERS = list(COMPANIES.keys())
 
 START_DATE = "2016-01-01"
 END_DATE = "2026-01-01"
-YEARS = list(range(2020, 2026))
+YEARS = list(range(2016, 2026))
 
 DATA_DIR = Path("data")
 
@@ -307,6 +307,8 @@ def main() -> None:
     # Compute CAGR
     n_years = len(YEARS)
     cagr = (1 + combined_total_return) ** (1 / n_years) - 1
+    spy_total_return = per_company_total_returns.get("SPY", np.nan)
+    spy_cagr = (1 + spy_total_return) ** (1 / n_years) - 1 if pd.notna(spy_total_return) else np.nan
 
     print(f"\n  Equal-weight cumulative return: {combined_total_return:.2%}")
     print(f"  Equal-weight CAGR ({n_years} yr):     {cagr:.2%}")
@@ -325,6 +327,9 @@ def main() -> None:
             "Total Return (%)": per_company_total_returns.reindex(COMPANIES.keys()).mul(100).round(2).values,
         }
     )
+    total_returns["CAGR (%)"] = total_returns["Total Return (%)"].apply(
+        lambda value: ((1 + value / 100) ** (1 / n_years) - 1) * 100 if pd.notna(value) else np.nan
+    )
     total_returns = pd.concat(
         [
             total_returns,
@@ -335,12 +340,14 @@ def main() -> None:
                         "Company": "Equal-Weight Portfolio",
                         "Sector": "Portfolio",
                         "Total Return (%)": round(combined_total_return * 100, 2),
+                        "CAGR (%)": round(cagr * 100, 2),
                     }
                 ]
             ),
         ],
         ignore_index=True,
     )
+    total_returns.loc[total_returns["Ticker"] == "SPY", "CAGR (%)"] = round(spy_cagr * 100, 2)
 
     # ── 6. Download monthly returns before writing any outputs ──────────
     monthly_returns = download_monthly_returns()
@@ -366,8 +373,9 @@ def main() -> None:
     _print_summary_heading("TOTAL RETURNS (%)")
     print(total_returns.to_string(index=False))
 
+    print(f"\n  S&P 500 CAGR ({n_years} yr):      {spy_cagr:.2%}")
     print(f"\n  Combined Total Return: {combined_total_return:.2%}")
-    print(f"  CAGR:                  {cagr:.2%}")
+    print(f"  Portfolio CAGR:        {cagr:.2%}")
     print("=" * 70)
 
 
