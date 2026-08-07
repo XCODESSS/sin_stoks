@@ -43,7 +43,7 @@ def sanity_check(covariance: pd.DataFrame, returns: pd.DataFrame) -> None:
     print(pairs.sort_values(ascending=False).head(5))
     print("\nLowest (most diversifying) pairs:")
     print(pairs.sort_values().head(5))
-    annualized_vol = (np.diag(covariance) * 12) ** 0.5
+    annualized_vol = np.diag(covariance) ** 0.5
 
     volatility = pd.Series(
         annualized_vol,
@@ -58,21 +58,34 @@ def sanity_check(covariance: pd.DataFrame, returns: pd.DataFrame) -> None:
 def main() -> None:
     monthly_returns = load_monthly_returns()
     expected_months = pd.date_range(start=COVARIANCE_START, end="2025-12-31", freq="ME")
-    missing_months = expected_months.difference(monthly_returns.index)
+    duplicate_months = monthly_returns.index[monthly_returns.index.duplicated()].unique()
+    unexpected_months = monthly_returns.index.difference(expected_months)
+    missing_months = expected_months.difference(monthly_returns.index.unique())
+    if not duplicate_months.empty or not unexpected_months.empty or not missing_months.empty:
+        details: list[str] = []
+        if not duplicate_months.empty:
+            details.append(f"Duplicate month-end rows: {list(duplicate_months.strftime('%Y-%m'))}")
+        if not unexpected_months.empty:
+            details.append(f"Unexpected month-end rows: {list(unexpected_months.strftime('%Y-%m'))}")
+        if not missing_months.empty:
+            details.append(f"Missing month-end rows: {list(missing_months.strftime('%Y-%m'))}")
+        raise ValueError(
+            "Covariance matrix needs complete data for all assets in this window. "
+            + "; ".join(details)
+        )
+
+    monthly_returns = monthly_returns.reindex(expected_months)
     expected_count = len(expected_months)
 
     coverage = monthly_returns.notna().sum()
     incomplete = coverage[coverage < expected_count]
-    if not missing_months.empty or not incomplete.empty:
-        missing_month_list = list(missing_months.strftime('%Y-%m')) if not missing_months.empty else []
-        if not missing_months.empty:
-            print(f"Missing month-end rows: {list(missing_months.strftime('%Y-%m'))}")
+    if not incomplete.empty:
         for ticker in incomplete.index:
             missing_dates = monthly_returns.index[monthly_returns[ticker].isna()]
             print(f"{ticker} missing: {list(missing_dates.strftime('%Y-%m'))}")
         raise ValueError(
             f"Covariance matrix needs complete data for all assets in this window. "
-            f"Missing months: {missing_month_list}; "
+            f"Missing months: {list(expected_months[monthly_returns.isna().all(axis=1)].strftime('%Y-%m'))}; "
             f"Missing assets: {dict(incomplete)}"
         )
     print("\nCoverage (%):")

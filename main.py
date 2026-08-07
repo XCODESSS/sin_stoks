@@ -238,10 +238,22 @@ def download_monthly_returns() -> pd.DataFrame:
 
     # Resample daily closes -> month-end closes, then compute monthly log returns
     monthly_close = close.resample("ME").last()
+    requested_start = pd.Timestamp(START_DATE)
+    requested_end = pd.Timestamp(END_DATE)
     expected_month_end_index = pd.date_range(
-        start=monthly_close.index.min(), end=monthly_close.index.max(), freq="ME"
+        start=requested_start + pd.offsets.MonthEnd(0),
+        end=(requested_end - pd.Timedelta(days=1)) + pd.offsets.MonthEnd(0),
+        freq="ME",
     )
     if not monthly_close.index.equals(expected_month_end_index):
+        raise RuntimeError("Monthly close endpoints do not match daily month-end closes.")
+
+    requested_start_month = requested_start.to_period("M")
+    requested_end_month = (requested_end - pd.Timedelta(days=1)).to_period("M")
+    if (
+        data.index.min().to_period("M") != requested_start_month
+        or data.index.max().to_period("M") != requested_end_month
+    ):
         raise RuntimeError("Monthly close endpoints do not match daily month-end closes.")
     monthly_returns = np.log(monthly_close / monthly_close.shift(1)).iloc[1:]  # drop first NaN row
 
