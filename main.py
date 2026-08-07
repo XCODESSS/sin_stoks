@@ -203,17 +203,17 @@ def has_download_problem(series: pd.Series) -> bool:
 
 
 def download_monthly_returns() -> pd.DataFrame:
-    """Download weekly close prices, resample to month-end, and compute monthly log returns.
+    """Download daily close prices, resample to month-end, and compute monthly log returns.
 
     Returns a DataFrame of shape (months, tickers) with monthly log returns
     suitable for covariance matrix estimation.
     """
-    print(f"\nDownloading weekly prices for {len(PORTFOLIO_TICKERS)} portfolio tickers...")
+    print(f"\nDownloading daily prices for {len(PORTFOLIO_TICKERS)} portfolio tickers...")
     data = yf.download(
         PORTFOLIO_TICKERS,
         start=START_DATE,
         end=END_DATE,
-        interval="1wk",
+        interval="1d",
         auto_adjust=True,
         progress=True,
         group_by="column",
@@ -230,14 +230,19 @@ def download_monthly_returns() -> pd.DataFrame:
         print(f"\n  Batch download had interior gaps for: {flaky} — retrying individually")
         for ticker in flaky:
             solo = yf.download(
-                ticker, start=START_DATE, end=END_DATE, interval="1wk",
+                ticker, start=START_DATE, end=END_DATE, interval="1d",
                 auto_adjust=True, progress=False,
             )
-            # Keep the same (weekly) index so it aligns with `close` before resampling
+            # Keep the same daily index so it aligns with `close` before resampling
             close[ticker] = solo["Close"].reindex(close.index)
 
-    # Resample weekly closes -> month-end closes, then compute monthly log returns
+    # Resample daily closes -> month-end closes, then compute monthly log returns
     monthly_close = close.resample("ME").last()
+    expected_month_end_index = pd.date_range(
+        start=monthly_close.index.min(), end=monthly_close.index.max(), freq="ME"
+    )
+    if not monthly_close.index.equals(expected_month_end_index):
+        raise RuntimeError("Monthly close endpoints do not match daily month-end closes.")
     monthly_returns = np.log(monthly_close / monthly_close.shift(1)).iloc[1:]  # drop first NaN row
 
     # Flatten any MultiIndex columns
@@ -327,8 +332,6 @@ def main() -> None:
     # Compute CAGR
     n_years = len(YEARS)
     cagr = (1 + combined_total_return) ** (1 / n_years) - 1
-    spy_total_return = per_company_total_returns.get("SPY", np.nan)
-    spy_cagr = (1 + spy_total_return) ** (1 / n_years) - 1 if pd.notna(spy_total_return) else np.nan
 
     print(f"\n  Equal-weight cumulative return: {combined_total_return:.2%}")
     print(f"  Equal-weight CAGR ({n_years} yr):     {cagr:.2%}")
@@ -357,6 +360,8 @@ def main() -> None:
         else np.nan,
         axis=1,
     )
+    spy_years = int(years_available.get("SPY", n_years))
+    spy_cagr = total_returns.loc[total_returns["Ticker"] == "SPY", "CAGR (%)"].iloc[0] / 100
     total_returns = pd.concat(
         [
             total_returns,
@@ -399,7 +404,7 @@ def main() -> None:
     _print_summary_heading("TOTAL RETURNS (%)")
     print(total_returns.to_string(index=False))
 
-    print(f"\n  S&P 500 CAGR ({n_years} yr):      {spy_cagr:.2%}")
+    print(f"\n  S&P 500 CAGR ({spy_years} yr):      {spy_cagr:.2%}")
     print(f"\n  Combined Total Return: {combined_total_return:.2%}")
     print(f"  Portfolio CAGR:        {cagr:.2%}")
     print("=" * 70)
