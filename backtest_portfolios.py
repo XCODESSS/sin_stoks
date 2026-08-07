@@ -9,9 +9,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy.optimize import minimize
 
 DATA_DIR = Path("data")
 COVARIANCE_START = "2017-04-01"  # Snap has no 2016 history
+MAX_WEIGHT = 0.25
+RISK_FREE_RATE = 0.04  # annual, USD — approx short-term T-bill proxy; change here if you want to source it live later
 
 
 def load_monthly_returns() -> pd.DataFrame:
@@ -34,6 +37,8 @@ def sanity_check(covariance: pd.DataFrame, returns: pd.DataFrame) -> None:
     print(f"Smallest eigenvalue: {smallest_eigenvalue:.6f}  (must be > 0 for a valid covariance matrix)")
 
     correlation = returns.corr()
+    correlation.to_csv(DATA_DIR / "correlation_matrix.csv")
+    print(f"Saved -> {DATA_DIR / 'correlation_matrix.csv'}")
     pairs = correlation.where(np.triu(np.ones(correlation.shape), k=1).astype(bool)).stack()
     print(f"\nAverage correlation : {pairs.mean():.3f}")
     print(f"Median correlation  : {pairs.median():.3f}")
@@ -54,6 +59,40 @@ def sanity_check(covariance: pd.DataFrame, returns: pd.DataFrame) -> None:
     print("\nMost volatile (annualized):")
     print(pd.Series(annualized_vol, index=covariance.index).sort_values(ascending=False).head(5))
 
+def compute_expected_returns(monthly_returns: pd.DataFrame) -> pd.Series:
+    """Annualized expected return per asset, from the same 2017-2025 window as the covariance matrix."""
+    mean_monthly_log_return = monthly_returns.mean()
+    return np.exp(mean_monthly_log_return * 12) - 1
+
+
+def max_sharpe_weights(
+    expected_returns: pd.Series, covariance: pd.DataFrame, max_weight: float = MAX_WEIGHT
+) -> pd.Series:
+    """Long-only Max Sharpe weights, capped at max_weight per asset."""
+    tickers = expected_returns.index
+    n = len(tickers)
+    cov = covariance.loc[tickers, tickers].to_numpy()
+    mu = expected_returns.to_numpy()
+
+    def negative_sharpe(weights: np.ndarray) -> float:
+        portfolio_return = weights @ mu
+        portfolio_vol = np.sqrt(max(weights @ cov @ weights, 1e-12))
+        return -(portfolio_return - RISK_FREE_RATE) / portfolio_vol
+
+    equal_weight = np.full(n, 1 / n)
+    result = minimize(
+        negative_sharpe,
+        equal_weight,
+        method="SLSQP",
+        bounds=[(0, max_weight)] * n,
+        constraints=[{"type": "eq", "fun": lambda w: w.sum() - 1}],
+        options={"ftol": 1e-12, "maxiter": 1000},
+    )
+    if not result.success:
+        raise RuntimeError(f"Max Sharpe optimization failed: {result.message}")
+
+    weights = pd.Series(result.x, index=tickers).clip(lower=0)
+    return weights / weights.sum()
 
 def main() -> None:
     monthly_returns = load_monthly_returns()
@@ -97,7 +136,26 @@ def main() -> None:
 
     covariance.to_csv(DATA_DIR / "covariance_matrix.csv")
     print(f"\nSaved -> {DATA_DIR / 'covariance_matrix.csv'}")
+    expected_returns = compute_expected_returns(monthly_returns)
 
+    expected_returns.to_csv(
+        DATA_DIR / "expected_returns.csv",
+        header=["Expected Annual Return"]
+    )
+
+    print(f"Saved -> {DATA_DIR / 'expected_returns.csv'}")
+
+    weights = max_sharpe_weights(expected_returns, covariance)
+
+    print(f"\nMax Sharpe weights (capped at {MAX_WEIGHT:.0%} per stock):")
+    print(weights.sort_values(ascending=False).round(4))
+
+    at_cap = weights[weights >= MAX_WEIGHT - 1e-6]
+    if not at_cap.empty:
+        print(f"\nHit the {MAX_WEIGHT:.0%} cap: {list(at_cap.index)}")
+
+    weights.to_csv(DATA_DIR / "max_sharpe_weights.csv", header=["Weight"])
+    print(f"Saved -> {DATA_DIR / 'max_sharpe_weights.csv'}")
 
 if __name__ == "__main__":
     main()
