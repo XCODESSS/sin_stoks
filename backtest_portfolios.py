@@ -60,9 +60,27 @@ def sanity_check(covariance: pd.DataFrame, returns: pd.DataFrame) -> None:
     print(pd.Series(annualized_vol, index=covariance.index).sort_values(ascending=False).head(5))
 
 def compute_expected_returns(monthly_returns: pd.DataFrame) -> pd.Series:
-    """Annualized expected return per asset, from the same 2017-2025 window as the covariance matrix."""
-    mean_monthly_log_return = monthly_returns.mean()
-    return np.exp(mean_monthly_log_return * 12) - 1
+    """Annualized arithmetic expected return per asset from monthly simple returns."""
+    mean_monthly_simple_return = monthly_returns.mean()
+    return mean_monthly_simple_return * 12
+
+
+def _project_to_capped_simplex(weights: np.ndarray, max_weight: float, tol: float = 1e-12) -> np.ndarray:
+    """Project weights onto {w | w>=0, w<=max_weight, sum(w)=1}."""
+    lo = weights.min() - max_weight
+    hi = weights.max()
+    for _ in range(200):
+        mid = (lo + hi) / 2
+        projected = np.clip(weights - mid, 0.0, max_weight)
+        total = projected.sum()
+        if abs(total - 1.0) <= tol:
+            return projected
+        if total > 1.0:
+            lo = mid
+        else:
+            hi = mid
+
+    return np.clip(weights - (lo + hi) / 2, 0.0, max_weight)
 
 
 def max_sharpe_weights(
@@ -71,6 +89,9 @@ def max_sharpe_weights(
     """Long-only Max Sharpe weights, capped at max_weight per asset."""
     tickers = expected_returns.index
     n = len(tickers)
+    if n * max_weight < 1:
+        raise ValueError(f"Infeasible cap: n * max_weight = {n * max_weight:.4f} < 1")
+
     cov = covariance.loc[tickers, tickers].to_numpy()
     mu = expected_returns.to_numpy()
 
@@ -91,8 +112,15 @@ def max_sharpe_weights(
     if not result.success:
         raise RuntimeError(f"Max Sharpe optimization failed: {result.message}")
 
-    weights = pd.Series(result.x, index=tickers).clip(lower=0)
-    return weights / weights.sum()
+    projected = _project_to_capped_simplex(result.x, max_weight=max_weight)
+    if (
+        (projected < -1e-8).any()
+        or (projected > max_weight + 1e-8).any()
+        or not np.isclose(projected.sum(), 1.0, atol=1e-8)
+    ):
+        raise RuntimeError("Projected Max Sharpe weights are infeasible under capped-simplex constraints")
+
+    return pd.Series(np.clip(projected, 0.0, max_weight), index=tickers)
 
 def main() -> None:
     monthly_returns = load_monthly_returns()
@@ -131,12 +159,13 @@ def main() -> None:
     coverage_pct = coverage / expected_count * 100
     print(coverage_pct.sort_values())
     
-    covariance = monthly_returns.cov()*12  # Annualize covariance
+    monthly_simple_returns = np.expm1(monthly_returns)
+    covariance = monthly_simple_returns.cov() * 12  # Annualize from monthly simple returns
     sanity_check(covariance, monthly_returns)
 
     covariance.to_csv(DATA_DIR / "covariance_matrix.csv")
     print(f"\nSaved -> {DATA_DIR / 'covariance_matrix.csv'}")
-    expected_returns = compute_expected_returns(monthly_returns)
+    expected_returns = compute_expected_returns(monthly_simple_returns)
 
     expected_returns.to_csv(
         DATA_DIR / "expected_returns.csv",
