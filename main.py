@@ -49,7 +49,7 @@ COMPANIES = {
     "EA": ("Electronic Arts", "Gaming"),
     "TTWO": ("Take-Two Interactive", "Gaming"),
     "CCOEY": ("Capcom", "Gaming"),
-    "NCBDY": ("Bandai Namco", "Gaming"),
+    "UBSFY": ("Ubisoft", "Gaming"),
     # Quick Service Restaurants
     "MCD": ("McDonald's", "Quick Service Restaurants"),
     "CMG": ("Chipotle Mexican Grill", "Quick Service Restaurants"),
@@ -188,24 +188,32 @@ def validate_coverage(
 
     return report
 
+def has_download_problem(series: pd.Series) -> bool:
+    first = series.first_valid_index()
+    last = series.last_valid_index()
 
+    return (
+        first is None
+        or series.loc[first:last].isna().any()
+        or last < series.index[-1]
+    )
 # ──────────────────────────────────────────────────────────────────────────────
 # Monthly returns for covariance estimation
 # ──────────────────────────────────────────────────────────────────────────────
 
 
 def download_monthly_returns() -> pd.DataFrame:
-    """Download monthly close prices and compute monthly log returns.
+    """Download weekly close prices, resample to month-end, and compute monthly log returns.
 
-    Returns a DataFrame of shape (months, tickers) with monthly percentage
-    returns suitable for covariance matrix estimation.
+    Returns a DataFrame of shape (months, tickers) with monthly log returns
+    suitable for covariance matrix estimation.
     """
-    print(f"\nDownloading monthly prices for {len(PORTFOLIO_TICKERS)} portfolio tickers...")
+    print(f"\nDownloading weekly prices for {len(PORTFOLIO_TICKERS)} portfolio tickers...")
     data = yf.download(
         PORTFOLIO_TICKERS,
         start=START_DATE,
         end=END_DATE,
-        interval="1mo",
+        interval="1wk",
         auto_adjust=True,
         progress=True,
         group_by="column",
@@ -216,8 +224,21 @@ def download_monthly_returns() -> pd.DataFrame:
 
     close = data["Close"]
 
-    # Log monthly returns for covariance estimation.
-    monthly_returns = np.log(close / close.shift(1)).iloc[1:]  # drop first NaN row
+    if flaky := [
+        ticker for ticker in close.columns if has_download_problem(close[ticker])
+    ]:
+        print(f"\n  Batch download had interior gaps for: {flaky} — retrying individually")
+        for ticker in flaky:
+            solo = yf.download(
+                ticker, start=START_DATE, end=END_DATE, interval="1wk",
+                auto_adjust=True, progress=False,
+            )
+            # Keep the same (weekly) index so it aligns with `close` before resampling
+            close[ticker] = solo["Close"].reindex(close.index)
+
+    # Resample weekly closes -> month-end closes, then compute monthly log returns
+    monthly_close = close.resample("ME").last()
+    monthly_returns = np.log(monthly_close / monthly_close.shift(1)).iloc[1:]  # drop first NaN row
 
     # Flatten any MultiIndex columns
     if isinstance(monthly_returns.columns, pd.MultiIndex):
@@ -230,7 +251,6 @@ def download_monthly_returns() -> pd.DataFrame:
         print(f"  Short-history tickers: {dict(short)}")
 
     return monthly_returns
-
 
 def _write_csv_outputs_atomically(outputs: dict[Path, tuple[pd.DataFrame, dict[str, object]]]) -> None:
     temp_paths: dict[Path, Path] = {}
@@ -327,8 +347,15 @@ def main() -> None:
             "Total Return (%)": per_company_total_returns.reindex(COMPANIES.keys()).mul(100).round(2).values,
         }
     )
-    total_returns["CAGR (%)"] = total_returns["Total Return (%)"].apply(
-        lambda value: ((1 + value / 100) ** (1 / n_years) - 1) * 100 if pd.notna(value) else np.nan
+    years_available = annual_returns[YEARS].notna().sum(axis=1)
+
+    total_returns["CAGR (%)"] = total_returns.apply(
+        lambda row: (
+            (1 + row["Total Return (%)"] / 100) ** (1 / years_available.get(row["Ticker"], n_years)) - 1
+        ) * 100
+        if pd.notna(row["Total Return (%)"])
+        else np.nan,
+        axis=1,
     )
     total_returns = pd.concat(
         [
@@ -347,7 +374,6 @@ def main() -> None:
         ],
         ignore_index=True,
     )
-    total_returns.loc[total_returns["Ticker"] == "SPY", "CAGR (%)"] = round(spy_cagr * 100, 2)
 
     # ── 6. Download monthly returns before writing any outputs ──────────
     monthly_returns = download_monthly_returns()

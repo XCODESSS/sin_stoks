@@ -11,7 +11,7 @@ PEP,PepsiCo,Energy Drinks,96.42,6.983935723149459
 KO,Coca-Cola,Energy Drinks,125.77,8.484233123214867
 META,Meta Platforms,Social Media,550.27,20.589465956243068
 GOOGL,Alphabet,Social Media,730.52,23.576249258172965
-SNAP,Snap Inc.,Social Media,-67.03,-10.50229584094634
+SNAP,Snap Inc.,Social Media,-67.03,-11.598901690007668
 TCEHY,Tencent,Social Media,351.2,16.26176427451915
 MSFT,Microsoft,Social Media,907.89,25.99151947829428
 PM,Philip Morris,Tobacco & Nicotine,202.98,11.722693153140828
@@ -23,11 +23,11 @@ NTDOY,Nintendo,Gaming,394.85,17.340344103086423
 EA,Electronic Arts,Gaming,217.93,12.262097165656805
 TTWO,Take-Two Interactive,Gaming,649.28,22.310689394128367
 CCOEY,Capcom,Gaming,657.44,22.443242982007327
-NCBDY,Bandai Namco,Gaming,78.98,5.993797067084183
+UBSFY,Ubisoft,Gaming,-74.52,-12.779224781264952
 MCD,McDonald's,Quick Service Restaurants,231.59,12.735356485533078
 CMG,Chipotle Mexican Grill,Quick Service Restaurants,312.2,15.215470782835583
 YUM,Yum! Brands,Quick Service Restaurants,251.22,13.385605562760293
 DPZ,Domino's Pizza,Quick Service Restaurants,326.22,15.601476873409093
 QSR,Restaurant Brands International,Quick Service Restaurants,159.56,10.007875244831176
-SPY,S&P 500 ETF,Benchmark,300.25,14.88
-PORTFOLIO,Equal-Weight Portfolio,Portfolio,408.83,17.67
+SPY,S&P 500 ETF,Benchmark,300.25,14.877012846024806
+PORTFOLIO,Equal-Weight Portfolio,Portfolio,386.25,17.13
