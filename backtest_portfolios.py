@@ -5,11 +5,12 @@ no 2016 history), and produces a covariance matrix for Max Sharpe.
 """
 
 from __future__ import annotations
+
 from pathlib import Path
-from statistics import covariance
 
 import numpy as np
 import pandas as pd
+from matplotlib.dates import MONTHS_PER_YEAR
 from scipy.optimize import minimize
 
 DATA_DIR = Path("data")
@@ -223,115 +224,179 @@ def risk_parity_weights(covariance: pd.DataFrame, max_weight: float = MAX_WEIGHT
 
     return pd.Series(projected, index=tickers)
 
-def main() -> None:
-    monthly_returns = load_monthly_returns()
-    expected_months = pd.date_range(start=COVARIANCE_START, end="2025-12-31", freq="ME")
-    duplicate_months = monthly_returns.index[monthly_returns.index.duplicated()].unique()
-    unexpected_months = monthly_returns.index.difference(expected_months)
-    missing_months = expected_months.difference(monthly_returns.index.unique())
-    if not duplicate_months.empty or not unexpected_months.empty or not missing_months.empty:
-        details: list[str] = []
-        if not duplicate_months.empty:
-            details.append(f"Duplicate month-end rows: {list(duplicate_months.strftime('%Y-%m'))}")
-        if not unexpected_months.empty:
-            details.append(f"Unexpected month-end rows: {list(unexpected_months.strftime('%Y-%m'))}")
-        if not missing_months.empty:
-            details.append(f"Missing month-end rows: {list(missing_months.strftime('%Y-%m'))}")
-        raise ValueError(
-            "Covariance matrix needs complete data for all assets in this window. "
-            + "; ".join(details)
+#=============================================================================
+# MAXIMUM DIVERSIFICATION
+#=============================================================================
+def max_diversification_weights(
+    covariance: pd.DataFrame,
+    max_weight: float = MAX_WEIGHT,
+) -> pd.Series:
+    """Long-only Maximum Diversification portfolio, capped at max_weight per asset."""
+
+    tickers = covariance.index
+    n = len(tickers)
+
+    cov = covariance.to_numpy()
+    vol = np.sqrt(np.diag(cov))
+
+    def negative_diversification_ratio(weights: np.ndarray) -> float:
+        portfolio_vol = np.sqrt(max(weights @ cov @ weights, 1e-12))
+        diversification_ratio = (weights @ vol) / portfolio_vol
+        return -diversification_ratio
+
+    equal_weight = np.full(n, 1 / n)
+
+    result = minimize(
+        negative_diversification_ratio,
+        equal_weight,
+        method="SLSQP",
+        bounds=[(0, max_weight)] * n,
+        constraints=[{"type": "eq", "fun": lambda w: w.sum() - 1}],
+        options={"ftol": 1e-12, "maxiter": 1000},
+    )
+
+    if not result.success:
+        raise RuntimeError(
+            f"Maximum Diversification optimization failed: {result.message}"
         )
 
-    monthly_returns = monthly_returns.reindex(expected_months)
-    expected_count = len(expected_months)
+    projected = _project_to_capped_simplex(
+        result.x,
+        max_weight=max_weight,
+    )
 
+    return pd.Series(projected, index=tickers)
+
+CAP_TOLERANCE = 1e-6
+
+
+def validate_month_index(actual_months: pd.DatetimeIndex, expected_months: pd.DatetimeIndex) -> None:
+    """Fail fast if the monthly-return index has duplicate, unexpected, or missing month-ends."""
+    duplicate_months = actual_months[actual_months.duplicated()].unique()
+    unexpected_months = actual_months.difference(expected_months)
+    missing_months = expected_months.difference(actual_months.unique())
+
+    if duplicate_months.empty and unexpected_months.empty and missing_months.empty:
+        return
+
+    details: list[str] = []
+    if not duplicate_months.empty:
+        details.append(f"Duplicate month-end rows: {list(duplicate_months.strftime('%Y-%m'))}")
+    if not unexpected_months.empty:
+        details.append(f"Unexpected month-end rows: {list(unexpected_months.strftime('%Y-%m'))}")
+    if not missing_months.empty:
+        details.append(f"Missing month-end rows: {list(missing_months.strftime('%Y-%m'))}")
+
+    raise ValueError(
+        "Covariance matrix needs complete data for all assets in this window. "
+        + "; ".join(details)
+    )
+
+
+def validate_full_asset_coverage(monthly_returns: pd.DataFrame) -> None:
+    """Fail fast if any ticker is missing observations within the (already-reindexed) window."""
+    expected_count = len(monthly_returns.index)
     coverage = monthly_returns.notna().sum()
     incomplete = coverage[coverage < expected_count]
-    if not incomplete.empty:
-        for ticker in incomplete.index:
-            missing_dates = monthly_returns.index[monthly_returns[ticker].isna()]
-            print(f"{ticker} missing: {list(missing_dates.strftime('%Y-%m'))}")
-        raise ValueError(
-            f"Covariance matrix needs complete data for all assets in this window. "
-            f"Missing months: {list(expected_months[monthly_returns.isna().all(axis=1)].strftime('%Y-%m'))}; "
-            f"Missing assets: {dict(incomplete)}"
-        )
+
+    if incomplete.empty:
+        return
+
+    for ticker in incomplete.index:
+        missing_dates = monthly_returns.index[monthly_returns[ticker].isna()]
+        print(f"{ticker} missing: {list(missing_dates.strftime('%Y-%m'))}")
+
+    fully_missing_months = monthly_returns.index[monthly_returns.isna().all(axis=1)]
+    raise ValueError(
+        "Covariance matrix needs complete data for all assets in this window. "
+        f"Missing months: {list(fully_missing_months.strftime('%Y-%m'))}; "
+        f"Missing assets: {dict(incomplete)}"
+    )
+
+
+def print_coverage_report(monthly_returns: pd.DataFrame) -> None:
+    expected_count = len(monthly_returns.index)
+    coverage_pct = monthly_returns.notna().sum() / expected_count * 100
     print("\nCoverage (%):")
-    coverage_pct = coverage / expected_count * 100
     print(coverage_pct.sort_values())
 
+
+def load_covariance_window_returns() -> pd.DataFrame:
+    """Load monthly returns, validate the window is complete, and reindex to it."""
+    monthly_returns = load_monthly_returns()
+    expected_months = pd.date_range(start=COVARIANCE_START, end="2025-12-31", freq="ME")
+
+    validate_month_index(monthly_returns.index, expected_months)
+    monthly_returns = monthly_returns.reindex(expected_months)
+    validate_full_asset_coverage(monthly_returns)
+
+    print_coverage_report(monthly_returns)
+    return monthly_returns
+
+
+def build_covariance_and_expected_returns(monthly_returns: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     monthly_simple_returns = np.expm1(monthly_returns)
-    covariance = monthly_simple_returns.cov() * 12  # Annualize from monthly simple returns
+    covariance = monthly_simple_returns.cov() * MONTHS_PER_YEAR  # annualized covariance
+    expected_returns = compute_expected_returns(monthly_simple_returns)
+    return covariance, expected_returns
+
+
+def save_to_csv(data: pd.DataFrame | pd.Series, path: Path, header: list[str] | None = None) -> None:
+    data.to_csv(path, header=header) if header is not None else data.to_csv(path)
+    print(f"Saved -> {path}")
+
+
+def print_strategy_weights(strategy_name: str, weights: pd.Series, covariance: pd.DataFrame) -> None:
+    """Print a strategy's weights (sorted, rounded) and its portfolio volatility."""
+    print(f"\n{strategy_name} weights:")
+    print(weights.sort_values(ascending=False).round(4))
+    print(f"{strategy_name} portfolio volatility: {portfolio_volatility(weights, covariance):.2%}")
+
+
+def print_cap_hits(strategy_name: str, weights: pd.Series, max_weight: float) -> None:
+    at_cap = weights[weights >= max_weight - CAP_TOLERANCE]
+    if at_cap.empty:
+        return
+    print(f"\n{strategy_name} hit the {max_weight:.0%} cap: {list(at_cap.index)}")
+
+
+def run_strategy(
+    strategy_name: str,
+    weights: pd.Series,
+    covariance: pd.DataFrame,
+    save_path: Path,
+    max_weight: float | None = None,
+) -> None:
+    """Print a strategy's results and persist its weights — the shared tail end of every strategy."""
+    print_strategy_weights(strategy_name, weights, covariance)
+    if max_weight is not None:
+        print_cap_hits(strategy_name, weights, max_weight)
+    save_to_csv(weights, save_path, header=["Weight"])
+
+
+def main() -> None:
+    monthly_returns = load_covariance_window_returns()
+    covariance, expected_returns = build_covariance_and_expected_returns(monthly_returns)
     sanity_check(covariance, monthly_returns)
 
-    covariance.to_csv(DATA_DIR / "covariance_matrix.csv")
-    print(f"\nSaved -> {DATA_DIR / 'covariance_matrix.csv'}")
-    expected_returns = compute_expected_returns(monthly_simple_returns)
+    save_to_csv(covariance, DATA_DIR / "covariance_matrix.csv")
+    save_to_csv(expected_returns, DATA_DIR / "expected_returns.csv", header=["Expected Annual Return"])
 
-    expected_returns.to_csv(
-        DATA_DIR / "expected_returns.csv",
-        header=["Expected Annual Return"]
-    )
-
-    print(f"Saved -> {DATA_DIR / 'expected_returns.csv'}")
-
-    weights = max_sharpe_weights(expected_returns, covariance)
-
-    print(f"\nMax Sharpe weights (capped at {MAX_WEIGHT:.0%} per stock):")
-    print(weights.sort_values(ascending=False).round(4))
-
-    at_cap = weights[weights >= MAX_WEIGHT - 1e-6]
-    if not at_cap.empty:
-        print(f"\nHit the {MAX_WEIGHT:.0%} cap: {list(at_cap.index)}")
-
+    max_sharpe = max_sharpe_weights(expected_returns, covariance)
+    run_strategy("Max Sharpe", max_sharpe, covariance, DATA_DIR / "max_sharpe_weights.csv", max_weight=MAX_WEIGHT)
 
     inverse_vol = inverse_vol_weights(covariance)
-    print(f"Max Sharpe portfolio volatility: {portfolio_volatility(weights, covariance):.2%}")
+    run_strategy("Inverse Volatility", inverse_vol, covariance, DATA_DIR / "inverse_vol_weights.csv")
 
-    _extracted_from_main_67(
-        "\nInverse Volatility weights:",
-        inverse_vol,
-        'Inverse Volatility portfolio volatility: ',
-        covariance,
-    )
     min_var = min_variance_weights(covariance)
+    run_strategy("Minimum Variance", min_var, covariance, DATA_DIR / "min_variance_weights.csv")
 
-    _extracted_from_main_67(
-        "\nMinimum Variance weights:",
-        min_var,
-        'Minimum Variance portfolio volatility: ',
-        covariance,
-    )
     risk_parity = risk_parity_weights(covariance)
+    run_strategy("Risk Parity", risk_parity, covariance, DATA_DIR / "risk_parity_weights.csv")
 
-    _extracted_from_main_67(
-        "\nRisk Parity weights:",
-        risk_parity,
-        'Risk Parity portfolio volatility: ',
-        covariance,
-    )
-    risk_parity.to_csv(
-            DATA_DIR / "risk_parity_weights.csv",
-            header=["Weight"]
-        )
+    max_diversification = max_diversification_weights(covariance)
+    run_strategy("Maximum Diversification", max_diversification, covariance, DATA_DIR / "max_diversification_weights.csv")
 
-    print(f"Saved -> {DATA_DIR / 'risk_parity_weights.csv'}")
 
-    print(f"Minimum Variance portfolio volatility: {portfolio_volatility(min_var, covariance):.2%}")
-
-    weights.to_csv(DATA_DIR / "max_sharpe_weights.csv", header=["Weight"])
-    print(f"Saved -> {DATA_DIR / 'max_sharpe_weights.csv'}")
-
-    inverse_vol.to_csv(DATA_DIR / "inverse_vol_weights.csv", header=["Weight"])
-    print(f"Saved -> {DATA_DIR / 'inverse_vol_weights.csv'}")
-
-    min_var.to_csv(DATA_DIR / "min_variance_weights.csv", header=["Weight"])
-    print(f"Saved -> {DATA_DIR / 'min_variance_weights.csv'}")
-
-def _extracted_from_main_67(arg0, arg1, arg2, covariance):
-    print(arg0)
-    print(arg1.sort_values(ascending=False).round(4))
-
-    print(f"{arg2}{portfolio_volatility(arg1, covariance):.2%}")
 if __name__ == "__main__":
     main()
