@@ -55,6 +55,17 @@ def sanity_check(covariance: pd.DataFrame, returns: pd.DataFrame) -> None:
         index=covariance.index,
         name="Annualized Volatility",
     )
+    # temporary diagnostic — compare log-return vol vs simple-return vol
+    # on the exact same underlying data, in the same run
+    log_vol_check = returns.std() * np.sqrt(12)
+    simple_vol_check = np.expm1(returns).std() * np.sqrt(12)
+    comparison = pd.DataFrame({
+        "log_return_vol": log_vol_check,
+        "simple_return_vol": simple_vol_check,
+        "ratio": simple_vol_check / log_vol_check,
+    }).sort_values("log_return_vol", ascending=False)
+    print("\nLog vs simple volatility, same data, same run:")
+    print(comparison.head(10))
     volatility.to_csv(DATA_DIR / "asset_volatility.csv")
     print("\nMost volatile (annualized):")
     print(pd.Series(annualized_vol, index=covariance.index).sort_values(ascending=False).head(5))
@@ -116,11 +127,53 @@ def max_sharpe_weights(
     if (
         (projected < -1e-8).any()
         or (projected > max_weight + 1e-8).any()
-        or not np.isclose(projected.sum(), 1.0, atol=1e-8)
+        or not np.isclose(projected.sum(), 1.0, atol=1e-8, rtol=0.0)
     ):
         raise RuntimeError("Projected Max Sharpe weights are infeasible under capped-simplex constraints")
 
     return pd.Series(np.clip(projected, 0.0, max_weight), index=tickers)
+
+#=============================================================================
+# INVERSE VOLATILITY
+#=============================================================================
+def _asset_volatilities(covariance: pd.DataFrame) -> pd.Series:
+    """Individual annualized volatility per asset - sqrt of the covariance matrix diagonal."""
+    return pd.Series(np.sqrt(np.diag(covariance)), index=covariance.index)
+
+def inverse_vol_weights(covariance: pd.DataFrame, max_weight: float = MAX_WEIGHT) -> pd.Series:
+    """Weight each asset inversely to its volatility. No optimizerm no correlation used."""
+    volatilities = _asset_volatilities(covariance)
+    raw_weights = 1 / volatilities
+    normalized = raw_weights / raw_weights.sum()
+    capped = _project_to_capped_simplex(normalized.to_numpy(), max_weight=max_weight)
+    return pd.Series(capped, index=covariance.index)
+
+#=============================================================================
+# MINIMUM VARIANCE
+#=============================================================================
+def min_variance_weights(covariance: pd.DataFrame, max_weight: float = MAX_WEIGHT) -> pd.Series:
+    """Long-only minimum-variance weights, capped at max_weight per asset."""
+    tickers = covariance.index
+    n = len(tickers)
+    cov = covariance.to_numpy()
+
+    def portfolio_variance(weights: np.ndarray) -> float:
+        return weights @ cov @ weights
+
+    equal_weight = np.full(n, 1 / n)
+    result = minimize(
+        portfolio_variance,
+        equal_weight,
+        method="SLSQP",
+        bounds=[(0, max_weight)] * n,
+        constraints=[{"type": "eq", "fun": lambda w: w.sum() - 1}],
+        options={"ftol": 1e-12, "maxiter": 1000},
+    )
+    if not result.success:
+        raise RuntimeError(f"Minimum Variance optimization failed: {result.message}")
+
+    projected = _project_to_capped_simplex(result.x, max_weight=max_weight)
+    return pd.Series(projected, index=tickers)
 
 def main() -> None:
     monthly_returns = load_monthly_returns()
@@ -158,7 +211,7 @@ def main() -> None:
     print("\nCoverage (%):")
     coverage_pct = coverage / expected_count * 100
     print(coverage_pct.sort_values())
-    
+
     monthly_simple_returns = np.expm1(monthly_returns)
     covariance = monthly_simple_returns.cov() * 12  # Annualize from monthly simple returns
     sanity_check(covariance, monthly_returns)
@@ -183,8 +236,23 @@ def main() -> None:
     if not at_cap.empty:
         print(f"\nHit the {MAX_WEIGHT:.0%} cap: {list(at_cap.index)}")
 
+    inverse_vol = inverse_vol_weights(covariance)
+    print(f"\nInverse Volatility weights:")
+    print(inverse_vol.sort_values(ascending=False).round(4))
+    min_var = min_variance_weights(covariance)
+    print(f"\nMinimum Variance weights:")
+    print(min_var.sort_values(ascending=False).round(4))
+
+    portfolio_vol = np.sqrt(min_var.to_numpy() @ covariance.to_numpy() @ min_var.to_numpy())
+    print(f"Minimum Variance portfolio volatility: {portfolio_vol:.2%}")
+
     weights.to_csv(DATA_DIR / "max_sharpe_weights.csv", header=["Weight"])
     print(f"Saved -> {DATA_DIR / 'max_sharpe_weights.csv'}")
-
+    
+    inverse_vol.to_csv(DATA_DIR / "inverse_vol_weights.csv", header=["Weight"])
+    print(f"Saved -> {DATA_DIR / 'inverse_vol_weights.csv'}")
+    
+    min_var.to_csv(DATA_DIR / "min_variance_weights.csv", header=["Weight"])
+    print(f"Saved -> {DATA_DIR / 'min_variance_weights.csv'}")
 if __name__ == "__main__":
     main()
