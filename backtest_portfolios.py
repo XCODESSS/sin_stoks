@@ -386,17 +386,16 @@ def main() -> None:
     run_strategy("Max Sharpe", max_sharpe, covariance, DATA_DIR / "max_sharpe_weights.csv", max_weight=MAX_WEIGHT)
 
     inverse_vol = inverse_vol_weights(covariance)
-    run_strategy("Inverse Volatility", inverse_vol, covariance, DATA_DIR / "inverse_vol_weights.csv")
+    run_strategy("Inverse Volatility", inverse_vol, covariance, DATA_DIR / "inverse_vol_weights.csv", max_weight=MAX_WEIGHT)
 
     min_var = min_variance_weights(covariance)
-    run_strategy("Minimum Variance", min_var, covariance, DATA_DIR / "min_variance_weights.csv")
+    run_strategy("Minimum Variance", min_var, covariance, DATA_DIR / "min_variance_weights.csv", max_weight=MAX_WEIGHT)
 
     risk_parity = risk_parity_weights(covariance)
-    run_strategy("Risk Parity", risk_parity, covariance, DATA_DIR / "risk_parity_weights.csv")
+    run_strategy("Risk Parity", risk_parity, covariance, DATA_DIR / "risk_parity_weights.csv", max_weight=MAX_WEIGHT)
 
     max_diversification = max_diversification_weights(covariance)
-    run_strategy("Maximum Diversification", max_diversification, covariance, DATA_DIR / "max_diversification_weights.csv")
-
+    run_strategy("Maximum Diversification", max_diversification, covariance, DATA_DIR / "max_diversification_weights.csv", max_weight=MAX_WEIGHT)
 
 if __name__ == "__main__":
     main()

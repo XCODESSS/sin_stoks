@@ -1,10 +1,10 @@
 """Download calendar-year returns for the behavioral-sector stock universe.
 
 Outputs:
-  data/annual_returns.csv   – Calendar-year returns (%) for 30 portfolio tickers + SPY
-  data/total_returns.csv    – Cumulative total return per ticker
-  data/monthly_returns.csv  – Monthly log-returns for covariance estimation
-  data/coverage_report.csv  – Per-year stock-count validation
+  data/annual_returns.csv   - Calendar-year returns (%) for 30 portfolio tickers + SPY
+  data/total_returns.csv    - Cumulative total return per ticker
+  data/monthly_returns.csv  - Monthly log-returns for covariance estimation
+  data/coverage_report.csv  - Per-year stock-count validation
 """
 
 from __future__ import annotations
@@ -177,7 +177,7 @@ def validate_coverage(
         )
     print("╚══════════════════════════════════════════════════════════════╝")
 
-    if any_gap := (report["Actual"] < report["Expected"]).any():
+    if (report["Actual"] < report["Expected"]).any():
         warnings.warn(
             "Coverage gap detected — some years have fewer stocks than expected. "
             "See coverage_report.csv for details.",
