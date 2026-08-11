@@ -10,12 +10,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from matplotlib.dates import MONTHS_PER_YEAR
 from scipy.optimize import minimize
 
 DATA_DIR = Path("data")
 COVARIANCE_START = "2017-04-01"  # Snap has no 2016 history
 MAX_WEIGHT = 0.25
+MONTHS_PER_YEAR = 12
 RISK_FREE_RATE = 0.04  # annual, USD — approx short-term T-bill proxy; change here if you want to source it live later
 
 
@@ -38,7 +38,14 @@ def sanity_check(covariance: pd.DataFrame, returns: pd.DataFrame) -> None:
     print(f"Assets: {covariance.shape[0]}")
     print(f"Smallest eigenvalue: {smallest_eigenvalue:.6f}  (must be > 0 for a valid covariance matrix)")
 
-    correlation = returns.corr()
+    std = np.sqrt(np.diag(covariance.to_numpy()))
+    correlation_matrix = (covariance.to_numpy() / np.outer(std, std)).copy()
+    np.fill_diagonal(correlation_matrix, 1.0)
+    correlation = pd.DataFrame(
+        correlation_matrix,
+        index=covariance.index,
+        columns=covariance.columns,
+    )
     correlation.to_csv(DATA_DIR / "correlation_matrix.csv")
     print(f"Saved -> {DATA_DIR / 'correlation_matrix.csv'}")
     pairs = correlation.where(np.triu(np.ones(correlation.shape), k=1).astype(bool)).stack()
@@ -72,10 +79,27 @@ def sanity_check(covariance: pd.DataFrame, returns: pd.DataFrame) -> None:
     print("\nMost volatile (annualized):")
     print(pd.Series(annualized_vol, index=covariance.index).sort_values(ascending=False).head(5))
 
-def compute_expected_returns(monthly_returns: pd.DataFrame) -> pd.Series:
-    """Annualized arithmetic expected return per asset from monthly simple returns."""
-    mean_monthly_simple_return = monthly_returns.mean()
-    return mean_monthly_simple_return * 12
+def compute_expected_returns(simple_returns: pd.DataFrame, periods_per_year: int = MONTHS_PER_YEAR) -> pd.Series:
+    """Annualized arithmetic expected return per asset from simple returns."""
+    mean_period_simple_return = simple_returns.mean()
+    return mean_period_simple_return * periods_per_year
+
+def load_weekly_returns() -> pd.DataFrame:
+    """Weekly log-return history, restricted to the covariance window and fully populated.
+
+    Drops any week where at least one ticker is missing, rather than
+    reindexing to a synthetic weekly calendar — weekly bars can drift by a
+    day or two across tickers in ways month-end bars don't.
+    """
+    returns = pd.read_csv(DATA_DIR / "weekly_returns.csv", index_col=0, parse_dates=True)
+    returns = returns.loc[(returns.index >= COVARIANCE_START) & (returns.index <= "2025-12-31")]
+
+    complete_returns = returns.dropna(how="any")
+    dropped_row_count = len(returns) - len(complete_returns)
+    if dropped_row_count:
+        print(f"load_weekly_returns: dropped {dropped_row_count} weeks with at least one missing ticker")
+
+    return complete_returns
 
 
 def _project_to_capped_simplex(weights: np.ndarray, max_weight: float, tol: float = 1e-12) -> np.ndarray:
@@ -94,6 +118,20 @@ def _project_to_capped_simplex(weights: np.ndarray, max_weight: float, tol: floa
             hi = mid
 
     return np.clip(weights - (lo + hi) / 2, 0.0, max_weight)
+
+
+def _validate_projected_weights(
+    weights: np.ndarray, max_weight: float, strategy_name: str, tol: float = 1e-8
+) -> None:
+    if (
+        not np.isfinite(weights).all()
+        or (weights < -tol).any()
+        or (weights > max_weight + tol).any()
+        or not np.isclose(weights.sum(), 1.0, atol=tol, rtol=0.0)
+    ):
+        raise RuntimeError(
+            f"Projected {strategy_name} weights are infeasible under capped-simplex constraints"
+        )
 
 def portfolio_volatility(weights: pd.Series, covariance: pd.DataFrame) -> float:
     """Annualized portfolio volatility."""
@@ -131,12 +169,7 @@ def max_sharpe_weights(
         raise RuntimeError(f"Max Sharpe optimization failed: {result.message}")
 
     projected = _project_to_capped_simplex(result.x, max_weight=max_weight)
-    if (
-        (projected < -1e-8).any()
-        or (projected > max_weight + 1e-8).any()
-        or not np.isclose(projected.sum(), 1.0, atol=1e-8, rtol=0.0)
-    ):
-        raise RuntimeError("Projected Max Sharpe weights are infeasible under capped-simplex constraints")
+    _validate_projected_weights(projected, max_weight, "Max Sharpe")
 
     return pd.Series(np.clip(projected, 0.0, max_weight), index=tickers)
 
@@ -155,8 +188,7 @@ def inverse_vol_weights(covariance: pd.DataFrame, max_weight: float = MAX_WEIGHT
     raw_weights = 1 / volatilities
     normalized = raw_weights / raw_weights.sum()
     capped = _project_to_capped_simplex(normalized.to_numpy(), max_weight=max_weight)
-    if not np.isclose(capped.sum(), 1.0, atol=1e-8, rtol=0.0):
-        raise RuntimeError("Projected inverse-volatility weights are infeasible under capped-simplex constraints")
+    _validate_projected_weights(capped, max_weight, "inverse-volatility")
     return pd.Series(capped, index=covariance.index)
 #=============================================================================
 # MINIMUM VARIANCE
@@ -183,6 +215,7 @@ def min_variance_weights(covariance: pd.DataFrame, max_weight: float = MAX_WEIGH
         raise RuntimeError(f"Minimum Variance optimization failed: {result.message}")
 
     projected = _project_to_capped_simplex(result.x, max_weight=max_weight)
+    _validate_projected_weights(projected, max_weight, "Minimum Variance")
     return pd.Series(projected, index=tickers)
 
 #=============================================================================
@@ -221,6 +254,7 @@ def risk_parity_weights(covariance: pd.DataFrame, max_weight: float = MAX_WEIGHT
         raise RuntimeError(f"Risk Parity optimization failed: {result.message}")
 
     projected = _project_to_capped_simplex(result.x, max_weight=max_weight)
+    _validate_projected_weights(projected, max_weight, "Risk Parity")
 
     return pd.Series(projected, index=tickers)
 
@@ -264,6 +298,7 @@ def max_diversification_weights(
         result.x,
         max_weight=max_weight,
     )
+    _validate_projected_weights(projected, max_weight, "Maximum Diversification")
 
     return pd.Series(projected, index=tickers)
 
