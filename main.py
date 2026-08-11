@@ -278,6 +278,7 @@ def download_weekly_returns() -> pd.DataFrame:
     """
     print(f"\nDownloading weekly prices for {len(PORTFOLIO_TICKERS)} portfolio tickers (individually)...")
     close_series: dict[str, pd.Series] = {}
+    missing_tickers: list[str] = []
 
     for ticker in PORTFOLIO_TICKERS:
         print(f"  Downloading {ticker}...", end=" ")
@@ -291,6 +292,7 @@ def download_weekly_returns() -> pd.DataFrame:
         )
         if solo.empty:
             print("NO DATA")
+            missing_tickers.append(ticker)
             continue
 
         series = solo["Close"].squeeze()
@@ -304,19 +306,23 @@ def download_weekly_returns() -> pd.DataFrame:
     if not close_series:
         raise RuntimeError("Weekly download returned no data for any ticker.")
 
-    # Build a combined close DataFrame — union of all dates
-    close = pd.DataFrame(close_series)
+    if missing_tickers:
+        failed = ", ".join(missing_tickers)
+        raise RuntimeError(
+            "Weekly download returned no data for required portfolio tickers: "
+            f"{failed}"
+        )
 
-    # Forward-fill gaps of up to 1 row (covers minor day-of-week alignment
-    # differences between tickers — weekly bars can land on different days)
-    close = close.ffill(limit=1)
+    # Normalize each ticker to a shared weekly period before combining.
+    normalized_close: dict[str, pd.Series] = {}
+    for ticker, series in close_series.items():
+        weekly_series = series.copy()
+        weekly_series.index = weekly_series.index.to_period("W-FRI")
+        weekly_series = weekly_series.groupby(level=0).last()
+        normalized_close[ticker] = weekly_series
 
-    # Drop rows where any ticker is still NaN after the fill
-    before_count = len(close)
+    close = pd.DataFrame(normalized_close)
     close = close.dropna(how="any")
-    dropped = before_count - len(close)
-    if dropped:
-        print(f"\n  Dropped {dropped} rows still missing data after 1-period forward fill")
 
     print(f"  Combined close shape: {close.shape}")
 
@@ -329,6 +335,27 @@ def download_weekly_returns() -> pd.DataFrame:
     print(f"\n  Weekly return observations per ticker (min={count.min()}, max={count.max()})")
 
     return weekly_returns
+
+def download_spy_weekly_returns() -> pd.Series:
+    """Weekly log returns for the SPY benchmark, downloaded on its own."""
+    data = yf.download(
+        "SPY",
+        start=START_DATE,
+        end=END_DATE,
+        interval="1wk",
+        auto_adjust=True,
+        progress=False,
+    )
+    if data.empty:
+        raise RuntimeError("Weekly download returned no data for SPY.")
+
+    close = data["Close"]
+    if isinstance(close, pd.DataFrame):
+        close = close["SPY"]
+
+    spy_returns = np.log(close / close.shift(1)).iloc[1:]
+    spy_returns.name = "SPY"
+    return spy_returns
 
 
 def _write_csv_outputs_atomically(outputs: dict[Path, tuple[pd.DataFrame, dict[str, object]]]) -> None:
@@ -459,6 +486,8 @@ def main() -> None:
 
     weekly_returns = download_weekly_returns()
 
+    spy_weekly_returns = download_spy_weekly_returns()
+
 
 
     # ── 7. Save the complete output set atomically ──────────────────────
@@ -469,6 +498,7 @@ def main() -> None:
             DATA_DIR / "coverage_report.csv": (coverage_report, {"index": False}),
             DATA_DIR / "monthly_returns.csv": (monthly_returns, {}),
             DATA_DIR / "weekly_returns.csv": (weekly_returns, {}),
+            DATA_DIR / "spy_weekly_returns.csv": (spy_weekly_returns.to_frame(), {}),
 
         }
     )

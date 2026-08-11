@@ -15,6 +15,7 @@ import pandas as pd
 from sklearn.covariance import LedoitWolf
 
 from backtest_portfolios import (
+    DATA_DIR,
     compute_expected_returns,
     inverse_vol_weights,
     load_weekly_returns,
@@ -69,6 +70,28 @@ def load_returns() -> pd.DataFrame:
     """Full weekly log-return history used for both training and testing."""
     return load_weekly_returns()
 
+def load_spy_returns() -> pd.Series:
+    """Weekly log-return history for the SPY benchmark."""
+    returns = pd.read_csv(DATA_DIR / "spy_weekly_returns.csv", index_col=0)
+    returns.index = pd.to_datetime(returns.index)
+    return returns["SPY"].dropna()
+
+
+def build_spy_results(rebalance_dates: list[pd.Timestamp]) -> tuple[pd.Series, pd.Series]:
+    """SPY's actual out-of-sample returns and portfolio value, on the same rebalance windows as the strategies."""
+    spy_log_returns = load_spy_returns()
+    spy_returns = pd.concat([
+        get_holding_period(spy_log_returns, rebalance_date)
+        for rebalance_date in rebalance_dates
+    ])
+    spy_returns = np.expm1(spy_returns)  # log -> simple, matching apply_weights()
+    spy_returns.name = "SPY"
+
+    spy_values = STARTING_VALUE * (1.0 + spy_returns).cumprod()
+    spy_values.name = "SPY"
+
+    return spy_returns, spy_values
+
 
 def get_rebalance_dates() -> list[pd.Timestamp]:
     return [pd.Timestamp(f"{year}-01-01") for year in REBALANCE_YEARS]
@@ -87,7 +110,9 @@ def get_training_window(
     return train
 
 
-def get_holding_period(returns: pd.DataFrame, rebalance_date: pd.Timestamp) -> pd.DataFrame:
+def get_holding_period(
+    returns: pd.DataFrame | pd.Series, rebalance_date: pd.Timestamp
+) -> pd.DataFrame | pd.Series:
     """The one-year window starting at the rebalance date — the out-of-sample test period."""
     next_rebalance_date = rebalance_date + pd.DateOffset(years=1)
     return returns.loc[(returns.index >= rebalance_date) & (returns.index < next_rebalance_date)]
@@ -162,7 +187,9 @@ def build_portfolio_values(period_returns: pd.DataFrame, starting_value: float) 
 
 
 def save_results(
-    weights: pd.DataFrame, period_returns: pd.DataFrame, portfolio_values: pd.DataFrame
+    weights: pd.DataFrame,
+    period_returns: pd.DataFrame,
+    portfolio_values: pd.DataFrame,
 ) -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     save_to_csv(weights, OUTPUT_DIR / "walk_forward_weights.csv")
@@ -175,6 +202,11 @@ def main() -> None:
     rebalance_dates = get_rebalance_dates()
 
     weights, period_returns = run_backtest(returns, rebalance_dates, STRATEGIES)
+
+    # Merge SPY benchmark into the strategy results so it appears as a column
+    spy_returns, spy_values = build_spy_results(rebalance_dates)
+    period_returns["SPY"] = spy_returns.reindex(period_returns.index)
+
     portfolio_values = build_portfolio_values(period_returns, STARTING_VALUE)
 
     save_results(weights, period_returns, portfolio_values)

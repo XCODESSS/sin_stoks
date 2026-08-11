@@ -13,14 +13,15 @@ import pandas as pd
 from scipy.optimize import minimize
 
 DATA_DIR = Path("data")
-COVARIANCE_START = "2017-04-01"  # Snap has no 2016 history
+COVARIANCE_START = "2017-04-01"
 MAX_WEIGHT = 0.25
 MONTHS_PER_YEAR = 12
 RISK_FREE_RATE = 0.04  # annual, USD — approx short-term T-bill proxy; change here if you want to source it live later
 
 
 def load_monthly_returns() -> pd.DataFrame:
-    returns = pd.read_csv(DATA_DIR / "monthly_returns.csv", index_col=0, parse_dates=True)
+    returns = pd.read_csv(DATA_DIR / "monthly_returns.csv", index_col=0)
+    returns.index = pd.to_datetime(returns.index)
     return returns.loc[(returns.index >= COVARIANCE_START) & (returns.index <= "2025-12-31")]
 
 
@@ -91,7 +92,14 @@ def load_weekly_returns() -> pd.DataFrame:
     reindexing to a synthetic weekly calendar — weekly bars can drift by a
     day or two across tickers in ways month-end bars don't.
     """
-    returns = pd.read_csv(DATA_DIR / "weekly_returns.csv", index_col=0, parse_dates=True)
+    returns = pd.read_csv(DATA_DIR / "weekly_returns.csv", index_col=0)
+    # yfinance weekly bars write the index as date ranges "YYYY-MM-DD/YYYY-MM-DD";
+    # extract the week-ending date (the part after the slash).
+    raw_index = returns.index.astype(str)
+    if raw_index.str.contains("/").any():
+        returns.index = pd.to_datetime(raw_index.str.split("/").str[-1])
+    else:
+        returns.index = pd.to_datetime(raw_index)
     returns = returns.loc[(returns.index >= COVARIANCE_START) & (returns.index <= "2025-12-31")]
 
     complete_returns = returns.dropna(how="any")
