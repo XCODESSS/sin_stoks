@@ -57,6 +57,16 @@ def calculate_volatility(returns: pd.Series) -> float:
     return returns.std() * np.sqrt(PERIODS_PER_YEAR)
 
 
+def _per_period_risk_free_target(
+    risk_free_rate: float,
+    returns_are_log: bool = False,
+) -> float:
+    """Convert an annual risk-free rate into the same per-period return domain."""
+    if returns_are_log:
+        return np.log1p(risk_free_rate) / PERIODS_PER_YEAR
+    return (1 + risk_free_rate) ** (1 / PERIODS_PER_YEAR) - 1
+
+
 def calculate_sharpe_ratio(
     returns: pd.Series,
     risk_free_rate: float = RISK_FREE_RATE,
@@ -74,13 +84,14 @@ def calculate_sharpe_ratio(
 def calculate_sortino_ratio(
     returns: pd.Series,
     risk_free_rate: float = RISK_FREE_RATE,
+    returns_are_log: bool = False,
 ) -> float:
     """Annualized Sortino ratio."""
-    downside = returns[returns < 0]
+    target_return = _per_period_risk_free_target(risk_free_rate, returns_are_log)
+    downside = target_return - returns[returns < target_return]
+    downside_deviation = np.sqrt(np.mean(np.square(downside))) * np.sqrt(PERIODS_PER_YEAR)
 
-    downside_deviation = downside.std() * np.sqrt(PERIODS_PER_YEAR)
-
-    if downside_deviation == 0:
+    if downside.empty or downside_deviation == 0:
         return np.nan
 
     annual_return = returns.mean() * PERIODS_PER_YEAR
@@ -124,9 +135,54 @@ def build_summary_table(
         strategy_returns = returns[strategy].dropna()
         strategy_values = portfolio_values[strategy].dropna()
 
+        if strategy_returns.empty:
+            rows.append(
+                {
+                    "Strategy": strategy,
+                    "Status": "skipped: no return observations",
+                    "Initial Value ($)": np.nan,
+                    "Final Value ($)": np.nan,
+                    "Return Amount ($)": np.nan,
+                    "Total Return": np.nan,
+                    "CAGR": np.nan,
+                    "Volatility": np.nan,
+                    "Sharpe Ratio": np.nan,
+                    "Sortino Ratio": np.nan,
+                    "Maximum Drawdown": np.nan,
+                    "Calmar Ratio": np.nan,
+                }
+            )
+            continue
+
+        if strategy_values.index.nunique() < 2:
+            rows.append(
+                {
+                    "Strategy": strategy,
+                    "Status": "skipped: fewer than two value timestamps",
+                    "Initial Value ($)": np.nan,
+                    "Final Value ($)": np.nan,
+                    "Return Amount ($)": np.nan,
+                    "Total Return": np.nan,
+                    "CAGR": np.nan,
+                    "Volatility": np.nan,
+                    "Sharpe Ratio": np.nan,
+                    "Sortino Ratio": np.nan,
+                    "Maximum Drawdown": np.nan,
+                    "Calmar Ratio": np.nan,
+                }
+            )
+            continue
+
+        init_val = round(float(strategy_values.iloc[0]), 2)
+        final_val = round(float(strategy_values.iloc[-1]), 2)
+        return_amt = round(final_val - init_val, 2)
+
         rows.append(
             {
                 "Strategy": strategy,
+                "Initial Value ($)": init_val,
+                "Final Value ($)": final_val,
+                "Return Amount ($)": return_amt,
                 "Total Return": calculate_total_return(strategy_values),
                 "CAGR": calculate_cagr(strategy_values),
                 "Volatility": calculate_volatility(strategy_returns),

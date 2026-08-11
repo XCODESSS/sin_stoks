@@ -183,7 +183,12 @@ def run_backtest(
 
 def build_portfolio_values(period_returns: pd.DataFrame, starting_value: float) -> pd.DataFrame:
     """Cumulative portfolio value per strategy, compounding period returns from a common start."""
-    return starting_value * (1.0 + period_returns).cumprod()
+    values = starting_value * (1.0 + period_returns).cumprod()
+    start_date = pd.Timestamp("2020-01-01")
+    if start_date not in values.index:
+        start_row = pd.DataFrame(starting_value, index=[start_date], columns=values.columns)
+        values = pd.concat([start_row, values])
+    return values
 
 
 def save_results(
@@ -205,11 +210,21 @@ def main() -> None:
 
     # Merge SPY benchmark into the strategy results so it appears as a column
     spy_returns, spy_values = build_spy_results(rebalance_dates)
-    period_returns["SPY"] = spy_returns.reindex(period_returns.index)
+    aligned_spy_returns = spy_returns.reindex(period_returns.index)
+    if aligned_spy_returns.isna().any():
+        missing_dates = aligned_spy_returns.index[aligned_spy_returns.isna()]
+        raise RuntimeError(
+            "SPY benchmark returns are missing for one or more walk-forward dates: "
+            f"{', '.join(date.strftime('%Y-%m-%d') for date in missing_dates)}"
+        )
+    period_returns["SPY"] = aligned_spy_returns
 
     portfolio_values = build_portfolio_values(period_returns, STARTING_VALUE)
 
     save_results(weights, period_returns, portfolio_values)
+
+    import report
+    report.main()
 
 
 if __name__ == "__main__":

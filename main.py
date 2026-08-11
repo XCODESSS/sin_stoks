@@ -353,7 +353,10 @@ def download_spy_weekly_returns() -> pd.Series:
     if isinstance(close, pd.DataFrame):
         close = close["SPY"]
 
+    close.index = close.index.to_period("W-FRI")
+    close = close.groupby(level=0).last()
     spy_returns = np.log(close / close.shift(1)).iloc[1:]
+    spy_returns.index = spy_returns.index.to_timestamp(how="end").normalize()
     spy_returns.name = "SPY"
     return spy_returns
 
