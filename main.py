@@ -9,6 +9,7 @@ Outputs:
 
 from __future__ import annotations
 
+from fileinput import close
 import warnings
 from pathlib import Path
 
@@ -327,6 +328,14 @@ def download_weekly_returns() -> pd.DataFrame:
     print(f"  Combined close shape: {close.shape}")
 
     weekly_returns = np.log(close / close.shift(1)).iloc[1:]
+
+    OUTLIER_THRESHOLD = 0.5  # |weekly log return| beyond this is a data artifact, not a real move
+    outliers = weekly_returns[weekly_returns.abs() > OUTLIER_THRESHOLD].stack()
+    if not outliers.empty:
+        print(f"\n  Flagged {len(outliers)} outlier weekly returns (|log return| > {OUTLIER_THRESHOLD}):")
+        for (date, ticker), value in outliers.items():
+            print(f"    {ticker} {date}: {value:.3f}")
+        weekly_returns = weekly_returns.mask(weekly_returns.abs() > OUTLIER_THRESHOLD)
 
     if isinstance(weekly_returns.columns, pd.MultiIndex):
         weekly_returns.columns = weekly_returns.columns.get_level_values(-1)
