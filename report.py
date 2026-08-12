@@ -264,6 +264,63 @@ def plot_drawdowns(
 
     plt.savefig(REPORT_DIR / "drawdowns.png")
     plt.close()
+def plot_dividend_returns_breakdown() -> None:
+    """Plot stacked bar chart of Capital Growth + Cash Dividends Earned and Dividend Income per strategy."""
+    import matplotlib.pyplot as plt
+
+    div_summary_path = REPORT_DIR / "total_returns_with_dividends.csv"
+    if not div_summary_path.exists():
+        return
+
+    df = pd.read_csv(div_summary_path)
+
+    plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(13, 10), sharex=True)
+
+    strategies = df["Strategy"]
+    x = np.arange(len(strategies))
+    bar_width = 0.55
+
+    capital_vals = df["Capital Value ($)"]
+    div_vals = df["Cash Dividends Earned ($)"]
+    total_vals = df["Total Portfolio Value ($)"]
+    returns_pct = df["Total Return (Cash Div %)"]
+
+    # Top Plot: Stacked Bar Chart (Capital Value + Dividends)
+    p1 = ax1.bar(x, capital_vals, bar_width, label="Capital Value ($)", color="#2b5c8f", edgecolor="none")
+    p2 = ax1.bar(x, div_vals, bar_width, bottom=capital_vals, label="Cash Dividends Earned ($)", color="#27ae60", edgecolor="none")
+
+    ax1.axhline(10000, color="#e74c3c", linestyle="--", linewidth=1.5, label="Initial Capital ($10,000)")
+    ax1.set_ylabel("Portfolio Value ($)", fontsize=12, fontweight="bold")
+    ax1.set_title("Walk-Forward Total Portfolio Value Breakdown (2020–2025)", fontsize=14, fontweight="bold", pad=12)
+    ax1.legend(loc="upper right", frameon=True, facecolor="white", framealpha=0.9)
+    ax1.set_ylim(0, max(total_vals) * 1.15)
+
+    # Add total value and return labels above each bar
+    for i in range(len(strategies)):
+        tot = total_vals.iloc[i]
+        ret = returns_pct.iloc[i]
+        ax1.text(x[i], tot + 400, f"${tot:,.2f}\n(+{ret:.1f}%)", ha="center", va="bottom", fontsize=9.5, fontweight="bold")
+
+    # Bottom Plot: Dividends Earned Comparison
+    bars_div = ax2.bar(x, div_vals, bar_width, color="#2e7d32", alpha=0.85)
+    ax2.set_ylabel("Cash Dividends Earned ($)", fontsize=12, fontweight="bold")
+    ax2.set_title("Total Cash Dividends Collected (2020–2025)", fontsize=13, fontweight="bold", pad=10)
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(strategies, rotation=15, ha="right", fontsize=11, fontweight="bold")
+    ax2.set_ylim(0, max(div_vals) * 1.25)
+
+    for bar in bars_div:
+        height = bar.get_height()
+        ax2.text(bar.get_x() + bar.get_width() / 2.0, height + 40, f"${height:,.2f}", ha="center", va="bottom", fontsize=10, fontweight="bold")
+
+    plt.tight_layout()
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    plt.savefig(REPORT_DIR / "dividend_returns_breakdown.png", dpi=300)
+    plt.close()
+    print(f"Saved -> {REPORT_DIR / 'dividend_returns_breakdown.png'}")
+
+
 # ============================================================================
 # SAVE RESULTS
 # ============================================================================
@@ -299,6 +356,8 @@ def main() -> None:
     plot_equity_curves(portfolio_values)
 
     plot_drawdowns(portfolio_values)
+
+    plot_dividend_returns_breakdown()
 
     print("\nPortfolio Performance Summary")
     print(summary.round(4))

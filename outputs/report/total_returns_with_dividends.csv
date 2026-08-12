@@ -1,0 +1,8 @@
+Strategy,Initial Capital ($),Capital Value ($),Cash Dividends Earned ($),Total Portfolio Value ($),Total Return (Cash Div %),DRIP Final Value ($),DRIP Total Return (%)
+Max Sharpe,10000.0,23771.1,681.8,24452.9,144.53,24247.12,142.47
+Equal Weight,10000.0,21900.56,1929.95,23830.51,138.31,23972.72,139.73
+Maximum Diversification,10000.0,21138.06,1995.26,23133.32,131.33,23223.26,132.23
+SPY,10000.0,21419.41,1206.38,22625.79,126.26,22906.36,129.06
+Risk Parity,10000.0,18929.14,1844.3,20773.43,107.73,20882.32,108.82
+Inverse Volatility,10000.0,18189.74,1859.92,20049.66,100.5,20107.39,101.07
+Minimum Variance,10000.0,13595.32,1704.73,15300.05,53.0,15250.9,52.51
