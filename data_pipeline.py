@@ -178,17 +178,25 @@ def download_weekly_returns() -> pd.DataFrame:
         normalized_close[ticker] = w_series.groupby(level=0).last()
 
     combined_close = pd.DataFrame(normalized_close)
-    retained_start = combined_close.index.min()
-    retained_end = combined_close.index.max()
+    normalized_start = combined_close.index.min()
+    normalized_end = combined_close.index.max()
     removed_weeks = len(combined_close)
     combined_close = combined_close.dropna(how="any")
     removed_weeks -= len(combined_close)
+    if combined_close.empty:
+        raise RuntimeError("Weekly downloads have no common observation weeks.")
+
+    retained_start = combined_close.index.min()
+    retained_end = combined_close.index.max()
     if not combined_close.empty:
         retained_start_dt = retained_start.to_timestamp(how="end").normalize()
         retained_end_dt = retained_end.to_timestamp(how="end").normalize()
+        normalized_start_dt = normalized_start.to_timestamp(how="end").normalize()
+        normalized_end_dt = normalized_end.to_timestamp(how="end").normalize()
         print(
             f"Retained intersected weekly range: {retained_start_dt.date()} to {retained_end_dt.date()} "
-            f"({removed_weeks} weeks removed from normalized range {retained_start_dt.date()} to {retained_end_dt.date()})."
+            f"( {removed_weeks} weeks removed from normalized range "
+            f"{normalized_start_dt.date()} to {normalized_end_dt.date()})."
         )
     weekly_returns = np.log(combined_close / combined_close.shift(1)).iloc[1:]
     weekly_returns.index = weekly_returns.index.to_timestamp(how="end").normalize()

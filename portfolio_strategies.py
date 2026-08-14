@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from scipy.cluster.hierarchy import linkage
 from scipy.optimize import minimize
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import squareform
 
 from config import DEFAULT_MAX_WEIGHT, RISK_FREE_RATE
 
@@ -83,6 +83,8 @@ def _solve_capped_slsqp(
     strategy_name: str,
 ) -> pd.Series:
     n = len(tickers)
+    if n * cfg.max_weight < 1.0:
+        raise ValueError(f"Infeasible cap: {n} assets with max_weight={cfg.max_weight:.4f} sum to < 1.0")
     equal_w = np.full(n, 1.0 / n)
     result = minimize(
         objective,
@@ -243,7 +245,7 @@ def _quasi_diagonal_order(covariance: pd.DataFrame) -> list[str]:
     """Cluster assets and return tickers in dendrogram leaf (quasi-diagonal) order."""
     correlation = _correlation_from_covariance(covariance)
     d_mat = _distance_matrix(correlation)
-    d_bar_condensed = pdist(d_mat, metric="euclidean")
+    d_bar_condensed = squareform(d_mat, checks=False)
     tree = linkage(d_bar_condensed, method="single")
 
     n_leaves = len(covariance)
