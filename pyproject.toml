@@ -6,7 +6,7 @@ requires-python = ">=3.10"
 dependencies = [
     "matplotlib>=3.8",
     "numpy>=2.0,<3",
-    "pandas>=2.2,<4",
+    "pandas>=2.2,<3",
     "scikit-learn>=1.4",
     "scipy>=1.12",
     "seaborn>=0.13",
@@ -48,6 +48,10 @@ known-first-party = [
     "data_pipeline",
     "portfolio_strategies",
     "backtest_engine",
+    "backtest_portfolios",
+    "download_dividends",
+    "report",
+    "run_backtest",
     "reporting",
 ]
 

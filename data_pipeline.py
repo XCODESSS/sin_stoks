@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 import warnings
 from datetime import datetime, timezone
 from pathlib import Path
@@ -132,23 +133,37 @@ def download_weekly_returns() -> pd.DataFrame:
     close_series: dict[str, pd.Series] = {}
     missing_tickers: list[str] = []
 
+    def download_close_series(ticker: str, max_attempts: int = 3) -> pd.Series | None:
+        for attempt in range(1, max_attempts + 1):
+            try:
+                solo = yf.download(
+                    ticker,
+                    start=START_DATE,
+                    end=END_DATE,
+                    interval="1wk",
+                    auto_adjust=True,
+                    progress=False,
+                )
+                if not solo.empty:
+                    series = solo["Close"].squeeze()
+                    if isinstance(series, pd.DataFrame):
+                        series = series.iloc[:, 0]
+                    return series.dropna()
+            except Exception:
+                pass
+
+            if attempt < max_attempts:
+                time.sleep(2 ** (attempt - 1))
+
+        return None
+
     for ticker in PORTFOLIO_TICKERS:
-        solo = yf.download(
-            ticker,
-            start=START_DATE,
-            end=END_DATE,
-            interval="1wk",
-            auto_adjust=True,
-            progress=False,
-        )
-        if solo.empty:
+        series = download_close_series(ticker)
+        if series is None or series.empty:
             missing_tickers.append(ticker)
             continue
 
-        series = solo["Close"].squeeze()
-        if isinstance(series, pd.DataFrame):
-            series = series.iloc[:, 0]
-        close_series[ticker] = series.dropna()
+        close_series[ticker] = series
 
     if missing_tickers:
         raise RuntimeError(
@@ -162,19 +177,33 @@ def download_weekly_returns() -> pd.DataFrame:
         w_series.index = pd.to_datetime(w_series.index).to_period("W-FRI")
         normalized_close[ticker] = w_series.groupby(level=0).last()
 
-    combined_close = pd.DataFrame(normalized_close).dropna(how="any")
+    combined_close = pd.DataFrame(normalized_close)
+    retained_start = combined_close.index.min()
+    retained_end = combined_close.index.max()
+    removed_weeks = len(combined_close)
+    combined_close = combined_close.dropna(how="any")
+    removed_weeks -= len(combined_close)
+    if not combined_close.empty:
+        retained_start_dt = retained_start.to_timestamp(how="end").normalize()
+        retained_end_dt = retained_end.to_timestamp(how="end").normalize()
+        print(
+            f"Retained intersected weekly range: {retained_start_dt.date()} to {retained_end_dt.date()} "
+            f"({removed_weeks} weeks removed from normalized range {retained_start_dt.date()} to {retained_end_dt.date()})."
+        )
     weekly_returns = np.log(combined_close / combined_close.shift(1)).iloc[1:]
     weekly_returns.index = weekly_returns.index.to_timestamp(how="end").normalize()
 
     # Apply documented KDP outlier threshold policy to filter merger artifacts
-    outliers = weekly_returns[weekly_returns.abs() > KDP_OUTLIER_THRESHOLD].stack()
+    outlier_mask = weekly_returns.abs() > KDP_OUTLIER_THRESHOLD
+    stacked_returns = weekly_returns.stack(dropna=False)
+    outliers = stacked_returns[outlier_mask.stack()]
     if not outliers.empty:
         print(
             f"\n  Filtered {len(outliers)} outlier weekly returns (|log return| > {KDP_OUTLIER_THRESHOLD}):"
         )
         for (date, tkr), val in outliers.items():
             print(f"    {tkr} {date.date()}: {val:.3f}")
-        weekly_returns = weekly_returns.mask(weekly_returns.abs() > KDP_OUTLIER_THRESHOLD).fillna(0.0)
+        weekly_returns = weekly_returns.mask(outlier_mask, 0.0)
 
     return weekly_returns
 

@@ -6,9 +6,11 @@ import numpy as np
 import pandas as pd
 
 from backtest_engine import (
+    BacktestConfig,
     apply_weights,
     get_holding_period,
     get_training_window,
+    run_walk_forward_backtest,
 )
 
 
@@ -40,7 +42,8 @@ def test_two_asset_hand_calculated_growth():
 def test_training_and_holding_window_isolation():
     """Training window and holding periods must strictly not overlap."""
     dates = pd.date_range("2018-01-01", "2024-12-31", freq="W-FRI")
-    df = pd.DataFrame(np.random.randn(len(dates), 4), index=dates, columns=["A", "B", "C", "D"])
+    rng = np.random.default_rng(42)
+    df = pd.DataFrame(rng.normal(size=(len(dates), 4)), index=dates, columns=["A", "B", "C", "D"])
 
     rebalance_date = pd.Timestamp("2022-01-01")
     train = get_training_window(df, rebalance_date, min_periods=52)
@@ -50,3 +53,42 @@ def test_training_and_holding_window_isolation():
     assert (hold.index >= rebalance_date).all()
     assert (hold.index < rebalance_date + pd.DateOffset(years=1)).all()
     assert len(train.index.intersection(hold.index)) == 0
+
+
+def test_run_walk_forward_backtest_handles_misaligned_spy_and_prepends_start_row():
+    """Walk-forward results should align a shifted SPY series and keep the prepended start row first."""
+    dates = pd.date_range("2018-01-05", "2020-12-25", freq="W-FRI")
+    returns = pd.DataFrame(
+        {
+            "A": np.log1p(np.full(len(dates), 0.01)),
+            "B": np.log1p(np.full(len(dates), 0.02)),
+        },
+        index=dates,
+    )
+    spy_dates = dates[dates >= pd.Timestamp("2020-01-10")]
+    spy_returns = pd.Series(np.log1p(np.full(len(spy_dates), 0.03)), index=spy_dates, name="SPY")
+
+    def strategy_a(expected_returns: pd.Series, covariance: pd.DataFrame, config) -> pd.Series:
+        return pd.Series([0.6, 0.4], index=covariance.index)
+
+    def strategy_b(expected_returns: pd.Series, covariance: pd.DataFrame, config) -> pd.Series:
+        return pd.Series([0.5, 0.5], index=covariance.index)
+
+    result = run_walk_forward_backtest(
+        returns,
+        spy_returns,
+        {"Strategy A": strategy_a, "Strategy B": strategy_b},
+        BacktestConfig(rebalance_years=[2020]),
+    )
+
+    assert isinstance(result.weights.index, pd.MultiIndex)
+    assert result.weights.index.names == ["Rebalance Date", "Strategy"]
+    assert list(result.weights.index.get_level_values("Strategy")) == ["Strategy A", "Strategy B"]
+
+    first_period = result.period_returns.index[0]
+    assert first_period not in spy_returns.index
+    assert result.period_returns.loc[first_period, "SPY"] == 0.0
+
+    expected_first_value = 10_000.0 * (1.0 + result.period_returns.loc[first_period, "SPY"])
+    assert np.isclose(result.portfolio_values.loc[first_period, "SPY"], expected_first_value)
+    assert result.portfolio_values.index[0] == pd.Timestamp("2020-01-01")

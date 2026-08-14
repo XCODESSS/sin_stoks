@@ -9,6 +9,7 @@ import pandas as pd
 
 from backtest_engine import BacktestConfig, BacktestResult, run_walk_forward_backtest
 from config import (
+    COVARIANCE_END,
     COVARIANCE_START,
     DATA_DIR,
     DEFAULT_MAX_WEIGHT,
@@ -31,7 +32,7 @@ def load_returns() -> pd.DataFrame:
     else:
         returns.index = pd.to_datetime(raw_index)
 
-    returns = returns.loc[(returns.index >= COVARIANCE_START) & (returns.index <= "2025-12-31")]
+    returns = returns.loc[(returns.index >= COVARIANCE_START) & (returns.index <= COVARIANCE_END)]
     return returns.fillna(0.0)
 
 
@@ -77,11 +78,13 @@ def run_orchestrator(
     print(f"  BACKTEST RUN SUMMARY (Cap: {cap:.0%})")
     print("=" * 70)
     for col in result.portfolio_values.columns:
-        init_val = result.portfolio_values[col].iloc[0]
+        init_val = config.starting_value
         final_val = result.portfolio_values[col].iloc[-1]
         tot_ret = (final_val / init_val) - 1.0
-        n_years = len(config.rebalance_years)
-        cagr = (final_val / init_val) ** (1.0 / n_years) - 1.0
+        start_date = pd.Timestamp(result.portfolio_values.index[0])
+        end_date = pd.Timestamp(result.portfolio_values.index[-1])
+        elapsed_years = (end_date - start_date).days / 365.25
+        cagr = (final_val / init_val) ** (1.0 / elapsed_years) - 1.0 if elapsed_years > 0 else float("nan")
         print(f"  {col:<26}: ${final_val:>10,.2f}  ({tot_ret:>+7.2%} | CAGR: {cagr:>6.2%})")
     print("=" * 70)
 

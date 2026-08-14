@@ -15,6 +15,7 @@ REPORT_DIR = OUTPUT_DIR / "report"
 START_DATE = "2016-01-01"
 END_DATE = "2026-01-01"
 COVARIANCE_START = "2017-04-01"
+COVARIANCE_END = "2025-12-31"
 YEARS = list(range(2016, 2026))
 
 # Walk-forward parameters

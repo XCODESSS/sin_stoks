@@ -54,4 +54,6 @@ def build_summary_table(
         )
 
     summary = pd.DataFrame(rows)
+    if summary.empty:
+        return summary
     return summary.sort_values(by="CAGR", ascending=False).reset_index(drop=True)

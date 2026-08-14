@@ -7,7 +7,9 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
+from scipy.cluster.hierarchy import linkage
 from scipy.optimize import minimize
+from scipy.spatial.distance import pdist
 
 from config import DEFAULT_MAX_WEIGHT, RISK_FREE_RATE
 
@@ -74,8 +76,32 @@ def calculate_portfolio_volatility(weights: pd.Series, covariance: pd.DataFrame)
     return float(np.sqrt(max(w @ cov @ w, 0.0)))
 
 
+def _solve_capped_slsqp(
+    objective: Callable[[np.ndarray], float],
+    tickers: pd.Index,
+    cfg: StrategyConfig,
+    strategy_name: str,
+) -> pd.Series:
+    n = len(tickers)
+    equal_w = np.full(n, 1.0 / n)
+    result = minimize(
+        objective,
+        equal_w,
+        method="SLSQP",
+        bounds=[(0.0, cfg.max_weight)] * n,
+        constraints=[{"type": "eq", "fun": lambda w: w.sum() - 1.0}],
+        options={"ftol": 1e-12, "maxiter": 1000},
+    )
+    if not result.success:
+        raise RuntimeError(f"{strategy_name} optimization failed: {result.message}")
+
+    projected = project_to_capped_simplex(result.x, max_weight=cfg.max_weight)
+    validate_projected_weights(projected, cfg.max_weight, strategy_name)
+    return pd.Series(projected, index=tickers)
+
+
 # ============================================================================
-# STRATEGY IMPLEMENTATIONS (ORIGINAL 6 STRATEGIES)
+# STRATEGY IMPLEMENTATIONS
 # ============================================================================
 
 
@@ -85,10 +111,14 @@ def equal_weight(
     config: StrategyConfig | None = None,
 ) -> pd.Series:
     """Equal-weight (1/N) allocation across all eligible assets."""
-    del expected_returns, config
+    del expected_returns
+    cfg = config or StrategyConfig()
     tickers = covariance.index
     n = len(tickers)
-    return pd.Series(1.0 / n, index=tickers)
+    target = np.full(n, 1.0 / n)
+    projected = project_to_capped_simplex(target, max_weight=cfg.max_weight)
+    validate_projected_weights(projected, cfg.max_weight, "Equal Weight")
+    return pd.Series(projected, index=tickers)
 
 
 def max_sharpe(
@@ -98,31 +128,16 @@ def max_sharpe(
 ) -> pd.Series:
     """Long-only Max Sharpe ratio portfolio solved via SLSQP quadratic optimization."""
     cfg = config or StrategyConfig()
-    tickers = expected_returns.index
-    n = len(tickers)
+    tickers = covariance.index
     cov = covariance.loc[tickers, tickers].to_numpy()
-    mu = expected_returns.to_numpy()
+    mu = expected_returns.loc[tickers].to_numpy()
 
     def negative_sharpe(weights: np.ndarray) -> float:
         port_ret = weights @ mu
         port_vol = np.sqrt(max(weights @ cov @ weights, 1e-12))
         return -(port_ret - cfg.risk_free_rate) / port_vol
 
-    equal_w = np.full(n, 1.0 / n)
-    result = minimize(
-        negative_sharpe,
-        equal_w,
-        method="SLSQP",
-        bounds=[(0.0, cfg.max_weight)] * n,
-        constraints=[{"type": "eq", "fun": lambda w: w.sum() - 1.0}],
-        options={"ftol": 1e-12, "maxiter": 1000},
-    )
-    if not result.success:
-        raise RuntimeError(f"Max Sharpe optimization failed: {result.message}")
-
-    projected = project_to_capped_simplex(result.x, max_weight=cfg.max_weight)
-    validate_projected_weights(projected, cfg.max_weight, "Max Sharpe")
-    return pd.Series(projected, index=tickers)
+    return _solve_capped_slsqp(negative_sharpe, tickers, cfg, "Max Sharpe")
 
 
 def inverse_volatility(
@@ -153,27 +168,12 @@ def minimum_variance(
     del expected_returns
     cfg = config or StrategyConfig()
     tickers = covariance.index
-    n = len(tickers)
     cov = covariance.loc[tickers, tickers].to_numpy()
 
     def portfolio_variance(weights: np.ndarray) -> float:
         return float(weights @ cov @ weights)
 
-    equal_w = np.full(n, 1.0 / n)
-    result = minimize(
-        portfolio_variance,
-        equal_w,
-        method="SLSQP",
-        bounds=[(0.0, cfg.max_weight)] * n,
-        constraints=[{"type": "eq", "fun": lambda w: w.sum() - 1.0}],
-        options={"ftol": 1e-12, "maxiter": 1000},
-    )
-    if not result.success:
-        raise RuntimeError(f"Minimum Variance optimization failed: {result.message}")
-
-    projected = project_to_capped_simplex(result.x, max_weight=cfg.max_weight)
-    validate_projected_weights(projected, cfg.max_weight, "Minimum Variance")
-    return pd.Series(projected, index=tickers)
+    return _solve_capped_slsqp(portfolio_variance, tickers, cfg, "Minimum Variance")
 
 
 def risk_parity(
@@ -185,8 +185,8 @@ def risk_parity(
     del expected_returns
     cfg = config or StrategyConfig()
     tickers = covariance.index
-    n = len(tickers)
     cov = covariance.loc[tickers, tickers].to_numpy()
+    n = len(tickers)
 
     def objective(weights: np.ndarray) -> float:
         port_var = weights @ cov @ weights
@@ -196,21 +196,7 @@ def risk_parity(
         target = port_vol / n
         return float(np.sum((risk_contrib - target) ** 2))
 
-    equal_w = np.full(n, 1.0 / n)
-    result = minimize(
-        objective,
-        equal_w,
-        method="SLSQP",
-        bounds=[(0.0, cfg.max_weight)] * n,
-        constraints=[{"type": "eq", "fun": lambda w: w.sum() - 1.0}],
-        options={"ftol": 1e-12, "maxiter": 1000},
-    )
-    if not result.success:
-        raise RuntimeError(f"Risk Parity optimization failed: {result.message}")
-
-    projected = project_to_capped_simplex(result.x, max_weight=cfg.max_weight)
-    validate_projected_weights(projected, cfg.max_weight, "Risk Parity")
-    return pd.Series(projected, index=tickers)
+    return _solve_capped_slsqp(objective, tickers, cfg, "Risk Parity")
 
 
 def maximum_diversification(
@@ -222,7 +208,6 @@ def maximum_diversification(
     del expected_returns
     cfg = config or StrategyConfig()
     tickers = covariance.index
-    n = len(tickers)
     cov = covariance.loc[tickers, tickers].to_numpy()
     vol = np.sqrt(np.diag(cov))
 
@@ -231,25 +216,103 @@ def maximum_diversification(
         weighted_vol = float(weights @ vol)
         return -weighted_vol / port_vol
 
-    equal_w = np.full(n, 1.0 / n)
-    result = minimize(
-        negative_dr,
-        equal_w,
-        method="SLSQP",
-        bounds=[(0.0, cfg.max_weight)] * n,
-        constraints=[{"type": "eq", "fun": lambda w: w.sum() - 1.0}],
-        options={"ftol": 1e-12, "maxiter": 1000},
-    )
-    if not result.success:
-        raise RuntimeError(f"Maximum Diversification optimization failed: {result.message}")
-
-    projected = project_to_capped_simplex(result.x, max_weight=cfg.max_weight)
-    validate_projected_weights(projected, cfg.max_weight, "Maximum Diversification")
-    return pd.Series(projected, index=tickers)
+    return _solve_capped_slsqp(negative_dr, tickers, cfg, "Maximum Diversification")
 
 
 # ============================================================================
-# STRATEGY REGISTRY (ORIGINAL 6 STRATEGIES)
+# HIERARCHICAL RISK PARITY (HRP) — López de Prado (2016)
+# ============================================================================
+
+
+def _correlation_from_covariance(covariance: pd.DataFrame) -> pd.DataFrame:
+    """Derive correlation from the same covariance matrix every strategy uses."""
+    std = np.sqrt(np.diag(covariance.to_numpy()))
+    corr = covariance.to_numpy() / np.outer(std, std)
+    np.fill_diagonal(corr, 1.0)
+    return pd.DataFrame(corr, index=covariance.index, columns=covariance.columns)
+
+
+def _distance_matrix(correlation: pd.DataFrame) -> np.ndarray:
+    """D(i,j) = sqrt(0.5 * (1 - rho_ij)) — correlation distance."""
+    distance = np.sqrt(0.5 * (1.0 - correlation.to_numpy()))
+    np.fill_diagonal(distance, 0.0)
+    return distance
+
+
+def _quasi_diagonal_order(covariance: pd.DataFrame) -> list[str]:
+    """Cluster assets and return tickers in dendrogram leaf (quasi-diagonal) order."""
+    correlation = _correlation_from_covariance(covariance)
+    d_mat = _distance_matrix(correlation)
+    d_bar_condensed = pdist(d_mat, metric="euclidean")
+    tree = linkage(d_bar_condensed, method="single")
+
+    n_leaves = len(covariance)
+    cluster_items: dict[int, list[int]] = {i: [i] for i in range(n_leaves)}
+    for i, (left, right, _dist, _count) in enumerate(tree):
+        cluster_items[n_leaves + i] = cluster_items[int(left)] + cluster_items[int(right)]
+    leaf_positions = cluster_items[2 * n_leaves - 2]
+
+    return [covariance.index[i] for i in leaf_positions]
+
+
+def _cluster_variance(covariance: pd.DataFrame, items: list[str]) -> float:
+    """Variance of items combined with inverse-variance weights."""
+    sub_cov = covariance.loc[items, items].to_numpy()
+    inv_var = 1.0 / np.diag(sub_cov)
+    weights = inv_var / inv_var.sum()
+    return float(weights @ sub_cov @ weights)
+
+
+def _recursive_bisection(covariance: pd.DataFrame, ordered_items: list[str]) -> pd.Series:
+    """Top-down split: at each level, allocate weight inversely to each half's cluster variance."""
+    weights = pd.Series(1.0, index=ordered_items)
+    clusters = [ordered_items]
+
+    while clusters:
+        next_round: list[list[str]] = []
+        for cluster in clusters:
+            if len(cluster) <= 1:
+                continue
+            midpoint = len(cluster) // 2
+            left, right = cluster[:midpoint], cluster[midpoint:]
+
+            var_left = _cluster_variance(covariance, left)
+            var_right = _cluster_variance(covariance, right)
+            alpha = 1.0 - var_left / (var_left + var_right)
+
+            weights[left] *= alpha
+            weights[right] *= 1.0 - alpha
+
+            next_round.append(left)
+            next_round.append(right)
+        clusters = next_round
+
+    return weights
+
+
+def hierarchical_risk_parity(
+    expected_returns: pd.Series,
+    covariance: pd.DataFrame,
+    config: StrategyConfig | None = None,
+) -> pd.Series:
+    """Long-only Hierarchical Risk Parity (HRP) weights, capped at max_weight per asset."""
+    del expected_returns
+    cfg = config or StrategyConfig()
+    ordered_items = _quasi_diagonal_order(covariance)
+    raw_weights = _recursive_bisection(covariance, ordered_items)
+    raw_weights = raw_weights.reindex(covariance.index)
+
+    projected = project_to_capped_simplex(raw_weights.to_numpy(), max_weight=cfg.max_weight)
+    validate_projected_weights(projected, cfg.max_weight, "Hierarchical Risk Parity")
+    return pd.Series(projected, index=covariance.index)
+
+
+# Alias
+hrp_weights = hierarchical_risk_parity
+
+
+# ============================================================================
+# STRATEGY REGISTRY
 # ============================================================================
 
 STRATEGIES: dict[str, StrategyCallable] = {
@@ -259,4 +322,5 @@ STRATEGIES: dict[str, StrategyCallable] = {
     "Minimum Variance": minimum_variance,
     "Risk Parity": risk_parity,
     "Maximum Diversification": maximum_diversification,
+    "Hierarchical Risk Parity": hierarchical_risk_parity,
 }

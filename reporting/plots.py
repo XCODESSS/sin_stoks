@@ -15,6 +15,7 @@ STRATEGY_COLORS: dict[str, str] = {
     "Risk Parity": "#27ae60",
     "Inverse Volatility": "#e67e22",
     "Minimum Variance": "#16a085",
+    "Hierarchical Risk Parity": "#d35400",
     "SPY": "#34495e",
 }
 
@@ -39,7 +40,7 @@ def _apply_theme() -> None:
 def plot_equity_curves(portfolio_values: pd.DataFrame, save_path: Path) -> None:
     """Plot cumulative walk-forward equity curves vs SPY benchmark."""
     _apply_theme()
-    fig, ax = plt.subplots(figsize=(12, 7))
+    _fig, ax = plt.subplots(figsize=(12, 7))
 
     for strategy in portfolio_values.columns:
         color = STRATEGY_COLORS.get(strategy, "#7f8c8d")
@@ -82,7 +83,7 @@ def plot_equity_curves(portfolio_values: pd.DataFrame, save_path: Path) -> None:
 def plot_drawdowns(portfolio_values: pd.DataFrame, save_path: Path) -> None:
     """Plot cumulative underwater drawdown curves across all strategies."""
     _apply_theme()
-    fig, ax = plt.subplots(figsize=(12, 6))
+    _fig, ax = plt.subplots(figsize=(12, 6))
 
     for strategy in portfolio_values.columns:
         drawdown = (portfolio_values[strategy] / portfolio_values[strategy].cummax()) - 1.0
@@ -119,7 +120,7 @@ def plot_dividend_returns_breakdown(div_summary_path: Path, save_path: Path) -> 
 
     df = pd.read_csv(div_summary_path)
     _apply_theme()
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(13, 10), sharex=True)
+    _fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(13, 10), sharex=True)
 
     strategies = df["Strategy"]
     x = np.arange(len(strategies))
@@ -153,7 +154,7 @@ def plot_dividend_returns_breakdown(div_summary_path: Path, save_path: Path) -> 
         ax1.text(
             x[i],
             tot + 400,
-            f"${tot:,.2f}\n(+{ret:.1f}%)",
+            f"${tot:,.2f}\n({ret:+.1f}%)",
             ha="center",
             va="bottom",
             fontsize=9,

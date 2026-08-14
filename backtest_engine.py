@@ -69,25 +69,27 @@ def get_holding_period(
     return returns.loc[(returns.index >= rebalance_date) & (returns.index < next_rebalance_date)]
 
 
-def build_covariance(train: pd.DataFrame) -> pd.DataFrame:
+def build_covariance(train: pd.DataFrame, periods_per_year: int = WEEKS_PER_YEAR) -> pd.DataFrame:
     """Annualized Ledoit-Wolf shrinkage covariance matrix from weekly log returns."""
     simple_returns = np.expm1(train)
     shrunk = LedoitWolf().fit(simple_returns.to_numpy())
     return pd.DataFrame(
-        shrunk.covariance_ * WEEKS_PER_YEAR,
+        shrunk.covariance_ * periods_per_year,
         index=train.columns,
         columns=train.columns,
     )
 
 
-def build_expected_returns(train: pd.DataFrame) -> pd.Series:
+def build_expected_returns(train: pd.DataFrame, periods_per_year: int = WEEKS_PER_YEAR) -> pd.Series:
     """Annualized arithmetic expected return per asset from historical simple returns."""
     simple_returns = np.expm1(train)
-    return simple_returns.mean() * WEEKS_PER_YEAR
+    return simple_returns.mean() * periods_per_year
 
 
 def apply_weights(weights: pd.Series, holding_period: pd.DataFrame) -> pd.Series:
     """Calculate portfolio out-of-sample weekly returns with intra-year asset price drift."""
+    if holding_period.empty:
+        return pd.Series(dtype=float)
     simple_returns = np.expm1(holding_period[weights.index])
     asset_growth = (1.0 + simple_returns).cumprod()
     portfolio_growth = asset_growth @ weights
@@ -129,8 +131,8 @@ def run_walk_forward_backtest(
         train = get_training_window(returns, rebalance_date, min_periods=cfg.min_estimation_weeks)
         test = get_holding_period(returns, rebalance_date)
 
-        covariance = build_covariance(train)
-        expected_returns = build_expected_returns(train)
+        covariance = build_covariance(train, periods_per_year=WEEKS_PER_YEAR)
+        expected_returns = build_expected_returns(train, periods_per_year=WEEKS_PER_YEAR)
 
         for strat_name, strat_fn in strategies.items():
             weights = strat_fn(expected_returns, covariance, strategy_cfg)
@@ -144,14 +146,17 @@ def run_walk_forward_backtest(
         {strat_name: pd.concat(chunks) for strat_name, chunks in return_chunks.items()}
     )
 
-    # Align SPY benchmark returns
     spy_returns, _ = build_spy_benchmark(spy_log_returns, rebalance_dates, cfg.starting_value)
-    aligned_spy = spy_returns.reindex(period_returns.index)
+    overlap = period_returns.index.intersection(spy_returns.index)
+    if overlap.empty:
+        raise ValueError("SPY benchmark and portfolio return indices do not overlap.")
+
+    aligned_spy = spy_returns.reindex(period_returns.index).fillna(0.0)
     period_returns["SPY"] = aligned_spy
 
     # Build compounded portfolio values
     portfolio_values = cfg.starting_value * (1.0 + period_returns).cumprod()
-    start_date = pd.Timestamp(f"{cfg.rebalance_years[0]}-01-01")
+    start_date = pd.Timestamp(f"{min(cfg.rebalance_years)}-01-01")
     if start_date not in portfolio_values.index:
         start_row = pd.DataFrame(cfg.starting_value, index=[start_date], columns=portfolio_values.columns)
         portfolio_values = pd.concat([start_row, portfolio_values])

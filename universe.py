@@ -48,14 +48,7 @@ BENCHMARK_TICKER: str = "SPY"
 BENCHMARK_TICKERS: set[str] = {BENCHMARK_TICKER}
 ALL_TICKERS: list[str] = list(COMPANIES.keys())
 
-SECTORS: list[str] = [
-    "Alcohol",
-    "Energy Drinks",
-    "Social Media",
-    "Tobacco & Nicotine",
-    "Gaming",
-    "Quick Service Restaurants",
-]
+SECTORS: list[str] = list(dict.fromkeys(sector for _, sector in COMPANIES.values()))
 
 
 def get_company_name(ticker: str) -> str:
@@ -78,8 +71,7 @@ def get_tickers_by_sector() -> dict[str, list[str]]:
     by_sector: dict[str, list[str]] = {s: [] for s in SECTORS}
     for ticker in PORTFOLIO_TICKERS:
         sector = get_sector(ticker)
-        if sector in by_sector:
-            by_sector[sector].append(ticker)
+        by_sector.setdefault(sector, []).append(ticker)
     return by_sector
 
 

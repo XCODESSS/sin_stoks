@@ -12,12 +12,12 @@ import pandas as pd
 import yfinance as yf
 
 from config import DATA_DIR, END_DATE, START_DATE
-from universe import ALL_TICKERS
+from universe import ALL_TICKERS, BENCHMARK_TICKER
 
 
 def download_dividend_and_price_history() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Fetch unadjusted prices and corporate actions (dividends) for all universe tickers."""
-    tickers = sorted(set([*ALL_TICKERS, "SPY"]))
+    tickers = sorted(set([*ALL_TICKERS, BENCHMARK_TICKER]))
     print(f"Downloading corporate actions & unadjusted prices for {len(tickers)} tickers...")
 
     # Download batch data with actions=True to get Dividends

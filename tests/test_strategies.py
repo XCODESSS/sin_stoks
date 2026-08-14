@@ -68,6 +68,13 @@ def test_infeasible_cap_raises():
         project_to_capped_simplex(raw, max_weight=0.40)
 
 
+def test_equal_weight_strategy_respects_registered_cap_failure(synthetic_market):
+    """Equal Weight must fail fast when the registered cap makes a feasible allocation impossible."""
+    mu, cov = synthetic_market
+    with pytest.raises(ValueError, match="Infeasible cap"):
+        STRATEGIES["Equal Weight"](mu, cov, StrategyConfig(max_weight=0.05, risk_free_rate=0.04))
+
+
 def test_portfolio_volatility_calculation(synthetic_market):
     """Portfolio volatility must be positive and match analytical matrix product."""
     mu, cov = synthetic_market
@@ -81,8 +88,11 @@ def test_portfolio_volatility_calculation(synthetic_market):
 
 def test_validate_projected_weights_catches_invalid():
     """Validator must reject non-summing or negative weights."""
-    with pytest.raises(ValueError, match="do not sum to 1.0"):
+    with pytest.raises(ValueError, match=r"do not sum to 1\.0"):
         validate_projected_weights(np.array([0.5, 0.3]), max_weight=0.5, strategy_name="Test")
+
+    with pytest.raises(ValueError, match="violated position cap"):
+        validate_projected_weights(np.array([0.6, 0.4]), max_weight=0.5, strategy_name="Test")
 
     with pytest.raises(ValueError, match="negative weights"):
         validate_projected_weights(np.array([1.2, -0.2]), max_weight=1.5, strategy_name="Test")
