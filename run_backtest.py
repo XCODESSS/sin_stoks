@@ -1,230 +1,113 @@
-"""Walk-forward evaluation of the portfolio strategies from backtest_portfolios.py.
-
-Uses weekly returns (not monthly) so early rebalance years have enough
-observations for a stable covariance estimate — see MIN_ESTIMATION_WEEKS
-below for why this actually fixes the original shortfall.
-"""
+"""Orchestrator CLI: loads market returns, executes registered strategies, and persists artifacts."""
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
-from typing import Callable
 
-import numpy as np
 import pandas as pd
-from sklearn.covariance import LedoitWolf
 
-from backtest_portfolios import (
+from backtest_engine import BacktestConfig, BacktestResult, run_walk_forward_backtest
+from config import (
+    COVARIANCE_START,
     DATA_DIR,
-    compute_expected_returns,
-    inverse_vol_weights,
-    load_weekly_returns,
-    max_diversification_weights,
-    max_sharpe_weights,
-    min_variance_weights,
-    risk_parity_weights,
-    save_to_csv,
+    DEFAULT_MAX_WEIGHT,
+    PORTFOLIO_OUTPUT_DIR,
+    REBALANCE_YEARS,
 )
-
-OUTPUT_DIR = Path("outputs/portfolio_backtest")
-REBALANCE_YEARS = [2020, 2021, 2022, 2023, 2024, 2025]
-WEEKS_PER_YEAR = 52
-
-# 104 weeks (~2 years) of observations — a genuine "enough data for
-# Ledoit-Wolf to be meaningful" floor, not a literal conversion of the old
-# 36-month threshold. Converting 36 months into weeks (~156) would just
-# reproduce the same calendar-time shortfall: the 2020 rebalance only has
-# ~139 weeks of history before it either way.
-MIN_ESTIMATION_WEEKS = 104
-
-STARTING_VALUE = 10_000  # USD notional
-
-Strategy = Callable[[pd.Series, pd.DataFrame], pd.Series]
-
-
-def _ignore_expected_returns(strategy_fn: Callable[[pd.DataFrame], pd.Series]) -> Strategy:
-    """Adapt a covariance-only strategy to the uniform (expected_returns, covariance) signature."""
-    def adapted(expected_returns: pd.Series, covariance: pd.DataFrame) -> pd.Series:
-        del expected_returns  # unused by this strategy
-        return strategy_fn(covariance)
-    return adapted
-
-
-def equal_weight_weights(covariance: pd.DataFrame) -> pd.Series:
-    """Equal weight across every asset in the covariance matrix — no estimation needed."""
-    asset_count = len(covariance)
-    return pd.Series(1.0 / asset_count, index=covariance.index)
-
-
-STRATEGIES: dict[str, Strategy] = {
-    "Equal Weight": _ignore_expected_returns(equal_weight_weights),
-    "Max Sharpe": max_sharpe_weights,
-    "Inverse Volatility": _ignore_expected_returns(inverse_vol_weights),
-    "Minimum Variance": _ignore_expected_returns(min_variance_weights),
-    "Risk Parity": _ignore_expected_returns(risk_parity_weights),
-    "Maximum Diversification": _ignore_expected_returns(max_diversification_weights),
-}
+from data_pipeline import write_csv_outputs_atomically
+from portfolio_strategies import STRATEGIES
 
 
 def load_returns() -> pd.DataFrame:
-    """Full weekly log-return history used for both training and testing."""
-    return load_weekly_returns()
+    """Load weekly log returns of portfolio assets, handling interval indices."""
+    csv_path = DATA_DIR / "weekly_returns.csv"
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Missing {csv_path}. Run 'python main.py' to download market data first.")
+    returns = pd.read_csv(csv_path, index_col=0)
+    raw_index = returns.index.astype(str)
+    if raw_index.str.contains("/").any():
+        returns.index = pd.to_datetime(raw_index.str.split("/").str[-1])
+    else:
+        returns.index = pd.to_datetime(raw_index)
+
+    returns = returns.loc[(returns.index >= COVARIANCE_START) & (returns.index <= "2025-12-31")]
+    return returns.fillna(0.0)
+
 
 def load_spy_returns() -> pd.Series:
-    """Weekly log-return history for the SPY benchmark."""
-    returns = pd.read_csv(DATA_DIR / "spy_weekly_returns.csv", index_col=0)
+    """Load weekly log returns of SPY benchmark."""
+    csv_path = DATA_DIR / "spy_weekly_returns.csv"
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Missing {csv_path}. Run 'python main.py' to download benchmark data first.")
+    returns = pd.read_csv(csv_path, index_col=0)
     returns.index = pd.to_datetime(returns.index)
     return returns["SPY"].dropna()
 
 
-def build_spy_results(rebalance_dates: list[pd.Timestamp]) -> tuple[pd.Series, pd.Series]:
-    """SPY's actual out-of-sample returns and portfolio value, on the same rebalance windows as the strategies."""
-    spy_log_returns = load_spy_returns()
-    spy_returns = pd.concat([
-        get_holding_period(spy_log_returns, rebalance_date)
-        for rebalance_date in rebalance_dates
-    ])
-    spy_returns = np.expm1(spy_returns)  # log -> simple, matching apply_weights()
-    spy_returns.name = "SPY"
+def save_backtest_artifacts(result: BacktestResult, output_dir: Path) -> None:
+    """Persist walk-forward outputs."""
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    spy_values = STARTING_VALUE * (1.0 + spy_returns).cumprod()
-    spy_values.name = "SPY"
-
-    return spy_returns, spy_values
+    csv_outputs: dict[Path, tuple[pd.DataFrame | pd.Series, dict[str, object]]] = {
+        output_dir / "walk_forward_returns.csv": (result.period_returns, {}),
+        output_dir / "walk_forward_values.csv": (result.portfolio_values, {}),
+        output_dir / "walk_forward_weights.csv": (result.weights, {}),
+    }
+    write_csv_outputs_atomically(csv_outputs)
 
 
-def get_rebalance_dates() -> list[pd.Timestamp]:
-    return [pd.Timestamp(f"{year}-01-01") for year in REBALANCE_YEARS]
+def run_orchestrator(
+    cap: float = DEFAULT_MAX_WEIGHT,
+    output_dir: Path = PORTFOLIO_OUTPUT_DIR,
+) -> BacktestResult:
+    """Run walk-forward optimization with given parameters and save results."""
+    returns = load_returns()
+    spy_returns = load_spy_returns()
 
-
-def get_training_window(
-    returns: pd.DataFrame, rebalance_date: pd.Timestamp, min_periods: int
-) -> pd.DataFrame:
-    """Expanding window: every observation strictly before the rebalance date."""
-    train = returns.loc[returns.index < rebalance_date]
-    if len(train) < min_periods:
-        raise ValueError(
-            f"Training window before {rebalance_date.date()} has only {len(train)} periods; "
-            f"needs at least {min_periods}."
-        )
-    return train
-
-
-def get_holding_period(
-    returns: pd.DataFrame | pd.Series, rebalance_date: pd.Timestamp
-) -> pd.DataFrame | pd.Series:
-    """The one-year window starting at the rebalance date — the out-of-sample test period."""
-    next_rebalance_date = rebalance_date + pd.DateOffset(years=1)
-    return returns.loc[(returns.index >= rebalance_date) & (returns.index < next_rebalance_date)]
-
-
-def build_covariance(train: pd.DataFrame) -> pd.DataFrame:
-    """Ledoit-Wolf shrinkage covariance, annualized, from a training window of weekly log returns."""
-    simple_returns = np.expm1(train)
-    shrunk = LedoitWolf().fit(simple_returns.to_numpy())
-    return pd.DataFrame(
-        shrunk.covariance_ * WEEKS_PER_YEAR,
-        index=train.columns,
-        columns=train.columns,
+    config = BacktestConfig(
+        max_weight=cap,
+        rebalance_years=list(REBALANCE_YEARS),
     )
 
+    result = run_walk_forward_backtest(returns, spy_returns, STRATEGIES, config)
+    save_backtest_artifacts(result, output_dir)
 
-def build_expected_returns(train: pd.DataFrame) -> pd.Series:
-    """Annualized arithmetic expected return per asset from the training window."""
-    simple_returns = np.expm1(train)
-    return compute_expected_returns(simple_returns, periods_per_year=WEEKS_PER_YEAR)
+    print("\n" + "=" * 70)
+    print(f"  BACKTEST RUN SUMMARY (Cap: {cap:.0%})")
+    print("=" * 70)
+    for col in result.portfolio_values.columns:
+        init_val = result.portfolio_values[col].iloc[0]
+        final_val = result.portfolio_values[col].iloc[-1]
+        tot_ret = (final_val / init_val) - 1.0
+        n_years = len(config.rebalance_years)
+        cagr = (final_val / init_val) ** (1.0 / n_years) - 1.0
+        print(f"  {col:<26}: ${final_val:>10,.2f}  ({tot_ret:>+7.2%} | CAGR: {cagr:>6.2%})")
+    print("=" * 70)
 
-
-def apply_weights(weights: pd.Series, holding_period: pd.DataFrame) -> pd.Series:
-    """Buy-and-hold: weights are set once at rebalance and drift with prices — no intra-year rebalancing."""
-    simple_returns = np.expm1(holding_period[weights.index])
-    asset_growth = (1 + simple_returns).cumprod()
-    portfolio_growth = asset_growth @ weights
-    portfolio_returns = portfolio_growth.pct_change()
-    portfolio_returns.iloc[0] = portfolio_growth.iloc[0] - 1
-    return portfolio_returns
-
-def run_backtest(
-    returns: pd.DataFrame,
-    rebalance_dates: list[pd.Timestamp],
-    strategies: dict[str, Strategy],
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Run the walk-forward loop across every rebalance date and strategy.
-
-    Returns:
-        weights: rows indexed by (rebalance date, strategy), columns = tickers.
-        period_returns: rows indexed by date, columns = strategy names.
-    """
-    weight_rows: dict[tuple[pd.Timestamp, str], pd.Series] = {}
-    return_chunks: dict[str, list[pd.Series]] = {name: [] for name in strategies}
-
-    for rebalance_date in rebalance_dates:
-        train = get_training_window(returns, rebalance_date, MIN_ESTIMATION_WEEKS)
-        test = get_holding_period(returns, rebalance_date)
-
-        covariance = build_covariance(train)
-        expected_returns = build_expected_returns(train)
-
-        for strategy_name, strategy in strategies.items():
-            weights = strategy(expected_returns, covariance)
-            weight_rows[(rebalance_date, strategy_name)] = weights
-            return_chunks[strategy_name].append(apply_weights(weights, test))
-
-    weights = pd.DataFrame(weight_rows).T
-    weights.index = weights.index.set_names(["Rebalance Date", "Strategy"])
-
-    period_returns = pd.DataFrame({
-        strategy_name: pd.concat(chunks)
-        for strategy_name, chunks in return_chunks.items()
-    })
-
-    return weights, period_returns
-
-
-def build_portfolio_values(period_returns: pd.DataFrame, starting_value: float) -> pd.DataFrame:
-    """Cumulative portfolio value per strategy, compounding period returns from a common start."""
-    values = starting_value * (1.0 + period_returns).cumprod()
-    start_date = pd.Timestamp("2020-01-01")
-    if start_date not in values.index:
-        start_row = pd.DataFrame(starting_value, index=[start_date], columns=values.columns)
-        values = pd.concat([start_row, values])
-    return values
-
-
-def save_results(
-    weights: pd.DataFrame,
-    period_returns: pd.DataFrame,
-    portfolio_values: pd.DataFrame,
-) -> None:
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    save_to_csv(weights, OUTPUT_DIR / "walk_forward_weights.csv")
-    save_to_csv(period_returns, OUTPUT_DIR / "walk_forward_returns.csv")
-    save_to_csv(portfolio_values, OUTPUT_DIR / "walk_forward_values.csv")
+    return result
 
 
 def main() -> None:
-    returns = load_returns()
-    rebalance_dates = get_rebalance_dates()
+    parser = argparse.ArgumentParser(description="Walk-forward portfolio optimization orchestrator.")
+    parser.add_argument(
+        "--cap",
+        type=float,
+        default=DEFAULT_MAX_WEIGHT,
+        help="Maximum position weight per asset (default: 0.25)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=PORTFOLIO_OUTPUT_DIR,
+        help="Output directory for generated artifacts",
+    )
 
-    weights, period_returns = run_backtest(returns, rebalance_dates, STRATEGIES)
-
-    # Merge SPY benchmark into the strategy results so it appears as a column
-    spy_returns, spy_values = build_spy_results(rebalance_dates)
-    aligned_spy_returns = spy_returns.reindex(period_returns.index)
-    if aligned_spy_returns.isna().any():
-        missing_dates = aligned_spy_returns.index[aligned_spy_returns.isna()]
-        raise RuntimeError(
-            "SPY benchmark returns are missing for one or more walk-forward dates: "
-            f"{', '.join(date.strftime('%Y-%m-%d') for date in missing_dates)}"
-        )
-    period_returns["SPY"] = aligned_spy_returns
-
-    portfolio_values = build_portfolio_values(period_returns, STARTING_VALUE)
-
-    save_results(weights, period_returns, portfolio_values)
-
-    import report
-    report.main()
+    args = parser.parse_args()
+    run_orchestrator(
+        cap=args.cap,
+        output_dir=args.output_dir,
+    )
 
 
 if __name__ == "__main__":

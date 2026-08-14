@@ -1,11 +1,22 @@
 [project]
 name = "sin-stoks"
 version = "0.1.0"
+description = "Quantitative asset allocation & walk-forward optimization on audited behavioral vice equities"
 requires-python = ">=3.10"
 dependencies = [
+    "matplotlib>=3.8",
     "numpy>=2.0,<3",
     "pandas>=2.2,<4",
+    "scikit-learn>=1.4",
+    "scipy>=1.12",
+    "seaborn>=0.13",
     "yfinance>=0.2,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
 ]
 
 [tool.ruff]
@@ -27,10 +38,18 @@ select = [
 ignore = [
     "E501",   # line too long — handled by formatter
     "SIM108", # ternary operator — readability preference
+    "E731",   # lambda assignment in compatibility wrapper
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["strategies", "evaluate"]
+known-first-party = [
+    "config",
+    "universe",
+    "data_pipeline",
+    "portfolio_strategies",
+    "backtest_engine",
+    "reporting",
+]
 
 [tool.ruff.format]
 quote-style = "double"
