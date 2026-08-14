@@ -50,7 +50,6 @@ known-first-party = [
     "portfolio_strategies",
     "backtest_engine",
     "backtest_portfolios",
-    "download_dividends",
     "report",
     "run_backtest",
     "reporting",

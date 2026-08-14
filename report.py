@@ -8,7 +8,6 @@ from config import PORTFOLIO_OUTPUT_DIR, REPORT_DIR
 from data_pipeline import write_csv_outputs_atomically
 from reporting.interactive import generate_interactive_dashboard
 from reporting.plots import (
-    plot_dividend_returns_breakdown,
     plot_drawdowns,
     plot_equity_curves,
 )
@@ -49,10 +48,6 @@ def main() -> None:
     # 2. Static visualizations (PNG)
     plot_equity_curves(values, REPORT_DIR / "equity_curves.png")
     plot_drawdowns(values, REPORT_DIR / "drawdowns.png")
-    plot_dividend_returns_breakdown(
-        REPORT_DIR / "total_returns_with_dividends.csv",
-        REPORT_DIR / "dividend_returns_breakdown.png",
-    )
 
     # 3. Interactive dashboard (HTML)
     generate_interactive_dashboard(

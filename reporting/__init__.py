@@ -14,7 +14,6 @@ from reporting.metrics import (
     calculate_volatility,
 )
 from reporting.plots import (
-    plot_dividend_returns_breakdown,
     plot_drawdowns,
     plot_equity_curves,
 )
@@ -33,7 +32,6 @@ __all__ = [
     "calculate_total_return",
     "calculate_volatility",
     "generate_interactive_dashboard",
-    "plot_dividend_returns_breakdown",
     "plot_drawdowns",
     "plot_equity_curves",
 ]
