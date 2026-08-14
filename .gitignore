@@ -1,3 +1,28 @@
+# Byte-compiled / optimized / ambient files
 __pycache__/
-implementation_plan.md
+*.py[cod]
+*$py.class
+
+# Testing & Linting
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environments & IDEs
+.venv/
+env/
+venv/
+.vscode/
+.idea/
+
+# AI / Agent Meta & Scratch Files
 prompts/
+implementation_plan.md
+PROJECT_CONTEXT.md
+outputs/baseline/
+outputs/report/weekly_project_report_*.md
+
+# Temporary & Log files
+*.tmp
+*.log
