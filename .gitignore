@@ -22,6 +22,7 @@ implementation_plan.md
 PROJECT_CONTEXT.md
 outputs/baseline/
 outputs/report/weekly_project_report_*.md
+outputs\report\dashboard.html
 
 # Temporary & Log files
 *.tmp
