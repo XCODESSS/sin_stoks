@@ -6,13 +6,17 @@ import numpy as np
 import pandas as pd
 
 from reporting.metrics import (
+    calculate_alpha,
+    calculate_beta,
     calculate_cagr,
     calculate_calmar_ratio,
     calculate_drawdown,
+    calculate_information_ratio,
     calculate_max_drawdown,
     calculate_sharpe_ratio,
     calculate_sortino_ratio,
     calculate_total_return,
+    calculate_tracking_error,
     calculate_volatility,
 )
 
@@ -60,3 +64,30 @@ def test_volatility_and_sharpe():
     sortino = calculate_sortino_ratio(rets, risk_free_rate=0.04, periods_per_year=52)
     assert np.isfinite(sharpe)
     assert np.isfinite(sortino)
+
+
+def test_beta_alpha_and_tracking_error():
+    """Verify Beta, Alpha, Tracking Error, and Information Ratio calculations."""
+    dates = pd.date_range("2021-01-01", periods=104, freq="W-FRI")
+    np.random.seed(42)
+    bench_rets = pd.Series(np.random.normal(0.002, 0.02, 104), index=dates)
+
+    # Perfect tracking (identical portfolio)
+    beta_ident = calculate_beta(bench_rets, bench_rets)
+    alpha_ident = calculate_alpha(bench_rets, bench_rets, risk_free_rate=0.04, periods_per_year=52)
+    te_ident = calculate_tracking_error(bench_rets, bench_rets, periods_per_year=52)
+    assert np.isclose(beta_ident, 1.0)
+    assert np.isclose(alpha_ident, 0.0)
+    assert np.isclose(te_ident, 0.0)
+
+    # 2x leveraged portfolio with 1% periodic alpha
+    port_rets = 2.0 * bench_rets + 0.001
+    beta_2x = calculate_beta(port_rets, bench_rets)
+    alpha_2x = calculate_alpha(port_rets, bench_rets, risk_free_rate=0.04, periods_per_year=52)
+    te_2x = calculate_tracking_error(port_rets, bench_rets, periods_per_year=52)
+    ir_2x = calculate_information_ratio(port_rets, bench_rets, periods_per_year=52)
+
+    assert np.isclose(beta_2x, 2.0)
+    assert np.isfinite(alpha_2x)
+    assert te_2x > 0.0
+    assert np.isfinite(ir_2x)

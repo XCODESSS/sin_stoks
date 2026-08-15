@@ -75,9 +75,7 @@ def calculate_drawdown(values: pd.Series) -> pd.Series:
 
 def calculate_max_drawdown(values: pd.Series) -> float:
     """Peak-to-trough maximum drawdown (negative float)."""
-    if values.empty:
-        return np.nan
-    return float(calculate_drawdown(values).min())
+    return np.nan if values.empty else float(calculate_drawdown(values).min())
 
 
 def calculate_calmar_ratio(values: pd.Series) -> float:
@@ -86,3 +84,58 @@ def calculate_calmar_ratio(values: pd.Series) -> float:
     if max_dd == 0 or np.isnan(max_dd):
         return np.nan
     return float(calculate_cagr(values) / max_dd)
+
+
+def calculate_beta(returns: pd.Series, benchmark_returns: pd.Series) -> float:
+    """Calculate portfolio Beta against the benchmark"""
+    aligned = pd.concat([returns, benchmark_returns], axis=1).dropna()
+    if aligned.empty or len(aligned) < 2:
+        return np.nan
+    cov = np.cov(aligned.iloc[:, 0], aligned.iloc[:, 1])
+    bench_var = np.var(aligned.iloc[:, 1], ddof=1)
+    if bench_var == 0 or np.isnan(bench_var):
+        return np.nan
+    return float(cov[0, 1] / bench_var)
+
+
+def calculate_alpha(
+    returns: pd.Series,
+    benchmark_returns: pd.Series,
+    risk_free_rate: float = RISK_FREE_RATE,
+    periods_per_year: int = WEEKS_PER_YEAR,
+) -> float:
+    """Annualized Jensen's Alpha: (R_p - R_f) - Beta * (R_b - R_f)."""
+    aligned = pd.concat([returns, benchmark_returns], axis=1).dropna()
+    if aligned.empty or len(aligned) < 2:
+        return np.nan
+    beta = calculate_beta(aligned.iloc[:, 0], aligned.iloc[:, 1])
+    if np.isnan(beta):
+        return np.nan
+    r_p = aligned.iloc[:, 0].mean() * periods_per_year
+    r_b = aligned.iloc[:, 1].mean() * periods_per_year
+    return float((r_p - risk_free_rate) - beta * (r_b - risk_free_rate))
+
+
+def calculate_tracking_error(
+    returns: pd.Series, benchmark_returns: pd.Series, periods_per_year: int = WEEKS_PER_YEAR
+) -> float:
+    """Annualized Tracking Error: StdDev(R_p - R_b) * sqrt(periods)."""
+    aligned = pd.concat([returns, benchmark_returns], axis=1).dropna()
+    if aligned.empty or len(aligned) < 2:
+        return np.nan
+    diff = aligned.iloc[:, 0] - aligned.iloc[:, 1]
+    return float(diff.std() * np.sqrt(periods_per_year))
+
+
+def calculate_information_ratio(
+    returns: pd.Series, benchmark_returns: pd.Series, periods_per_year: int = WEEKS_PER_YEAR
+) -> float:
+    """Information Ratio: Annualized Excess Return / Annualized Tracking Error."""
+    aligned = pd.concat([returns, benchmark_returns], axis=1).dropna()
+    if aligned.empty or len(aligned) < 2:
+        return np.nan
+    te = calculate_tracking_error(aligned.iloc[:, 0], aligned.iloc[:, 1], periods_per_year)
+    if te == 0 or np.isnan(te):
+        return np.nan
+    excess_return = (aligned.iloc[:, 0].mean() - aligned.iloc[:, 1].mean()) * periods_per_year
+    return float(excess_return / te)

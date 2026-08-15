@@ -100,6 +100,7 @@ def apply_weights(weights: pd.Series, holding_period: pd.DataFrame) -> pd.Series
     period_returns.iloc[0] = portfolio_growth.iloc[0] - 1.0
     return period_returns
 
+
 def calculate_turnover(old_weights: pd.Series, new_weights: pd.Series) -> float:
     """One-way turnover: half the sum of absolute weight changes."""
     aligned_old = old_weights.reindex(new_weights.index, fill_value=0.0)
@@ -114,6 +115,7 @@ def calculate_drifted_weights(weights: pd.Series, holding_period: pd.DataFrame) 
     asset_growth = (1.0 + simple_returns).cumprod().iloc[-1]
     drifted_value = weights * asset_growth
     return drifted_value / drifted_value.sum()
+
 
 def build_spy_benchmark(
     spy_log_returns: pd.Series,

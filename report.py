@@ -57,9 +57,9 @@ def main() -> None:
         save_path=REPORT_DIR / "dashboard.html",
     )
 
-    print("\n" + "=" * 80)
+    print("\n" + "=" * 115)
     print("  PORTFOLIO PERFORMANCE SUMMARY")
-    print("=" * 80)
+    print("=" * 115)
     display_cols = [
         "Strategy",
         "Initial Value ($)",
@@ -70,6 +70,10 @@ def main() -> None:
         "Sortino Ratio",
         "Maximum Drawdown",
         "Calmar Ratio",
+        "Beta",
+        "Alpha",
+        "Tracking Error",
+        "Information Ratio",
     ]
     formatted = summary_table[display_cols].copy()
     formatted["CAGR"] = formatted["CAGR"].map(lambda x: f"{x:.2%}")
@@ -78,8 +82,16 @@ def main() -> None:
     formatted["Sharpe Ratio"] = formatted["Sharpe Ratio"].map(lambda x: f"{x:.4f}")
     formatted["Sortino Ratio"] = formatted["Sortino Ratio"].map(lambda x: f"{x:.4f}")
     formatted["Calmar Ratio"] = formatted["Calmar Ratio"].map(lambda x: f"{x:.4f}")
+    formatted["Beta"] = formatted["Beta"].map(lambda x: f"{x:.4f}" if pd.notna(x) else "N/A")
+    formatted["Alpha"] = formatted["Alpha"].map(lambda x: f"{x:.2%}" if pd.notna(x) else "N/A")
+    formatted["Tracking Error"] = formatted["Tracking Error"].map(
+        lambda x: f"{x:.2%}" if pd.notna(x) else "N/A"
+    )
+    formatted["Information Ratio"] = formatted["Information Ratio"].map(
+        lambda x: f"{x:.4f}" if pd.notna(x) else "N/A"
+    )
     print(formatted.to_string(index=False))
-    print("=" * 80)
+    print("=" * 115)
 
 
 if __name__ == "__main__":

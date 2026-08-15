@@ -333,6 +333,19 @@ def build_summary_html_table(summary: pd.DataFrame) -> str:
 
         tot_ret_cls = ' class="positive"' if row["Total Return"] > 0 else ' class="negative"'
 
+        beta_str = f"{row['Beta']:.4f}" if "Beta" in row and pd.notna(row["Beta"]) else "&mdash;"
+        alpha_str = f"{row['Alpha']:.2%}" if "Alpha" in row and pd.notna(row["Alpha"]) else "&mdash;"
+        te_str = (
+            f"{row['Tracking Error']:.2%}"
+            if "Tracking Error" in row and pd.notna(row["Tracking Error"])
+            else "&mdash;"
+        )
+        ir_str = (
+            f"{row['Information Ratio']:.4f}"
+            if "Information Ratio" in row and pd.notna(row["Information Ratio"])
+            else "&mdash;"
+        )
+
         rows_html += f"""<tr{row_class}>
             <td>{dot}{strat}</td>
             <td>{_format_money(row["Initial Value ($)"])}</td>
@@ -344,6 +357,10 @@ def build_summary_html_table(summary: pd.DataFrame) -> str:
             <td>{_format_ratio(row["Sortino Ratio"])}</td>
             <td{dd_cls}>{_format_pct(row["Maximum Drawdown"])}</td>
             <td{calmar_cls}>{_format_ratio(row["Calmar Ratio"])}</td>
+            <td>{beta_str}</td>
+            <td>{alpha_str}</td>
+            <td>{te_str}</td>
+            <td>{ir_str}</td>
         </tr>"""
 
     table_html = f"""
@@ -363,6 +380,10 @@ def build_summary_html_table(summary: pd.DataFrame) -> str:
                     <th>Sortino</th>
                     <th>Max DD</th>
                     <th>Calmar</th>
+                    <th>Beta</th>
+                    <th>Alpha</th>
+                    <th>Tracking Err</th>
+                    <th>Info Ratio</th>
                 </tr>
             </thead>
             <tbody>

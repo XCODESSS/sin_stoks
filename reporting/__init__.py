@@ -4,13 +4,17 @@ from __future__ import annotations
 
 from reporting.interactive import generate_interactive_dashboard
 from reporting.metrics import (
+    calculate_alpha,
+    calculate_beta,
     calculate_cagr,
     calculate_calmar_ratio,
     calculate_drawdown,
+    calculate_information_ratio,
     calculate_max_drawdown,
     calculate_sharpe_ratio,
     calculate_sortino_ratio,
     calculate_total_return,
+    calculate_tracking_error,
     calculate_volatility,
 )
 from reporting.plots import (
@@ -23,13 +27,17 @@ from reporting.tables import (
 
 __all__ = [
     "build_summary_table",
+    "calculate_alpha",
+    "calculate_beta",
     "calculate_cagr",
     "calculate_calmar_ratio",
     "calculate_drawdown",
+    "calculate_information_ratio",
     "calculate_max_drawdown",
     "calculate_sharpe_ratio",
     "calculate_sortino_ratio",
     "calculate_total_return",
+    "calculate_tracking_error",
     "calculate_volatility",
     "generate_interactive_dashboard",
     "plot_drawdowns",
