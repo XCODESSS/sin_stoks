@@ -11,6 +11,7 @@ from sklearn.covariance import LedoitWolf
 
 from config import (
     DEFAULT_MAX_WEIGHT,
+    DEFAULT_TRANSACTION_COST_BPS,
     MIN_ESTIMATION_WEEKS,
     REBALANCE_YEARS,
     RISK_FREE_RATE,
@@ -29,6 +30,7 @@ class BacktestConfig:
     risk_free_rate: float = RISK_FREE_RATE
     min_estimation_weeks: int = MIN_ESTIMATION_WEEKS
     starting_value: float = STARTING_VALUE
+    transaction_cost_bps: float = DEFAULT_TRANSACTION_COST_BPS
 
 
 @dataclass
@@ -38,6 +40,7 @@ class BacktestResult:
     period_returns: pd.DataFrame
     portfolio_values: pd.DataFrame
     weights: pd.DataFrame
+    turnover: pd.DataFrame
     config: BacktestConfig
 
 
@@ -97,6 +100,20 @@ def apply_weights(weights: pd.Series, holding_period: pd.DataFrame) -> pd.Series
     period_returns.iloc[0] = portfolio_growth.iloc[0] - 1.0
     return period_returns
 
+def calculate_turnover(old_weights: pd.Series, new_weights: pd.Series) -> float:
+    """One-way turnover: half the sum of absolute weight changes."""
+    aligned_old = old_weights.reindex(new_weights.index, fill_value=0.0)
+    return float((new_weights - aligned_old).abs().sum() / 2.0)
+
+
+def calculate_drifted_weights(weights: pd.Series, holding_period: pd.DataFrame) -> pd.Series:
+    """Asset-level weights at the end of the holding period, after price drift — no rebalancing."""
+    if holding_period.empty:
+        return weights
+    simple_returns = np.expm1(holding_period[weights.index])
+    asset_growth = (1.0 + simple_returns).cumprod().iloc[-1]
+    drifted_value = weights * asset_growth
+    return drifted_value / drifted_value.sum()
 
 def build_spy_benchmark(
     spy_log_returns: pd.Series,
@@ -126,6 +143,9 @@ def run_walk_forward_backtest(
 
     weight_rows: dict[tuple[pd.Timestamp, str], pd.Series] = {}
     return_chunks: dict[str, list[pd.Series]] = {name: [] for name in strategies}
+    turnover_rows: list[dict[str, object]] = []
+    previous_drifted_weights: dict[str, pd.Series] = {}
+    cost_fraction = cfg.transaction_cost_bps / 10_000.0
 
     for rebalance_date in rebalance_dates:
         train = get_training_window(returns, rebalance_date, min_periods=cfg.min_estimation_weeks)
@@ -137,10 +157,27 @@ def run_walk_forward_backtest(
         for strat_name, strat_fn in strategies.items():
             weights = strat_fn(expected_returns, covariance, strategy_cfg)
             weight_rows[(rebalance_date, strat_name)] = weights
-            return_chunks[strat_name].append(apply_weights(weights, test))
+
+            if strat_name in previous_drifted_weights:
+                turnover = calculate_turnover(previous_drifted_weights[strat_name], weights)
+            else:
+                turnover = 1.0  # first rebalance: full investment from cash
+
+            cost = turnover * cost_fraction
+            turnover_rows.append(
+                {"Rebalance Date": rebalance_date, "Strategy": strat_name, "Turnover": turnover, "Cost": cost}
+            )
+
+            strat_returns = apply_weights(weights, test)
+            if not strat_returns.empty:
+                strat_returns.iloc[0] -= cost
+            return_chunks[strat_name].append(strat_returns)
+
+            previous_drifted_weights[strat_name] = calculate_drifted_weights(weights, test)
 
     weights_df = pd.DataFrame(weight_rows).T
     weights_df.index = weights_df.index.set_names(["Rebalance Date", "Strategy"])
+    turnover_df = pd.DataFrame(turnover_rows)
 
     period_returns = pd.DataFrame(
         {strat_name: pd.concat(chunks) for strat_name, chunks in return_chunks.items()}
@@ -165,5 +202,6 @@ def run_walk_forward_backtest(
         period_returns=period_returns,
         portfolio_values=portfolio_values,
         weights=weights_df,
+        turnover=turnover_df,
         config=cfg,
     )
