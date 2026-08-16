@@ -22,7 +22,6 @@ from reporting.metrics import (
 from reporting.plots import (
     plot_allocation_heatmap,
     plot_celh_concentration_analysis,
-    plot_dividend_contribution,
     plot_drawdowns,
     plot_equity_curves,
     plot_performance_comparison,
@@ -52,7 +51,6 @@ __all__ = [
     "generate_interactive_dashboard",
     "plot_allocation_heatmap",
     "plot_celh_concentration_analysis",
-    "plot_dividend_contribution",
     "plot_drawdowns",
     "plot_equity_curves",
     "plot_performance_comparison",

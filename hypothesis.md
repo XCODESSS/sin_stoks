@@ -57,7 +57,7 @@ Celsius Holdings (`CELH`) gained **+2,788.8%** between 2020 and 2025. When we is
 Without `CELH`, **Equal Weight falls from 15.70% to 10.88%**, lagging SPY by nearly 400 basis points per year.
 
 ### D. Sector Correlation & Genuine Diversification
-The 6 behavioral vice sectors exhibit low pairwise correlations, proving that habitual human consumption operates across distinct, non-overlapping demand drivers:
+The 6 aggregated behavioral vice sector indices (equal-weighted composite return series) exhibit low pairwise correlations, proving that habitual human consumption operates across distinct, non-overlapping demand drivers:
 
 | Sector | Alcohol | Energy Drinks | Social Media | Tobacco | Gaming | QSR |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |

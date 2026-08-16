@@ -343,44 +343,6 @@ def plot_strategy_correlation_heatmap(strategy_returns: pd.DataFrame, save_path:
     print(f"Saved -> {save_path}")
 
 
-def plot_dividend_contribution(save_path: Path) -> None:
-    """Sector-level total return vs price return breakdown (Dividend Impact)."""
-    # Stylized sector total return vs price return (empirical DRIP contribution)
-    sectors = ["Tobacco & Nicotine", "Alcohol", "QSR", "Energy Drinks", "Gaming", "Social Media"]
-    total_cagr = [11.7, 5.2, 13.4, 17.8, 12.3, 15.1]
-    price_cagr = [5.6, 2.8, 10.9, 17.2, 11.2, 14.8]
-    dividend_yield_cagr = [t - p for t, p in zip(total_cagr, price_cagr, strict=False)]
-
-    _apply_theme()
-    fig, ax = plt.subplots(figsize=(11, 6))
-    y_pos = np.arange(len(sectors))
-    bar_width = 0.55
-
-    ax.barh(y_pos, price_cagr, bar_width, label="Price Appreciation CAGR (%)", color="#3498db", alpha=0.9)
-    ax.barh(
-        y_pos,
-        dividend_yield_cagr,
-        bar_width,
-        left=price_cagr,
-        label="Dividend Reinvestment Drag/Boost (%)",
-        color="#2ecc71",
-        alpha=0.9,
-    )
-
-    ax.set_yticks(y_pos)
-    ax.set_yticklabels(sectors, fontweight="bold", fontsize=10)
-    ax.set_xlabel("Compound Annual Growth Rate (%)", fontweight="bold")
-    ax.set_title("Sector Total Return Breakdown: Capital Gains vs. Dividend Reinvestment", pad=14)
-    ax.legend(loc="lower right", frameon=True, facecolor="white")
-
-    for i, (tot, div) in enumerate(zip(total_cagr, dividend_yield_cagr, strict=False)):
-        ax.text(tot + 0.3, i, f"{tot:.1f}% (+{div:.1f}% div)", va="center", fontweight="bold", fontsize=8.5)
-
-    save_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.tight_layout()
-    plt.savefig(save_path, dpi=300)
-    plt.close()
-    print(f"Saved -> {save_path}")
 
 
 def plot_celh_concentration_analysis(

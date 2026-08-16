@@ -12,7 +12,6 @@ from reporting.interactive import generate_interactive_dashboard
 from reporting.plots import (
     plot_allocation_heatmap,
     plot_celh_concentration_analysis,
-    plot_dividend_contribution,
     plot_drawdowns,
     plot_equity_curves,
     plot_performance_comparison,
@@ -97,10 +96,7 @@ def main() -> None:
     if not strategy_returns.empty:
         plot_strategy_correlation_heatmap(strategy_returns, REPORT_DIR / "strategy_correlation_heatmap.png")
 
-    # Plot 7: Dividend Contribution Breakdown
-    plot_dividend_contribution(REPORT_DIR / "dividend_contribution.png")
-
-    # Plot 8: CELH Concentration Analysis (With vs Without CELH)
+    # Plot 7: CELH Concentration Analysis (With vs Without CELH)
     try:
         stock_returns = load_returns()
         spy_returns = load_spy_returns()
