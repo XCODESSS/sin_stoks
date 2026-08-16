@@ -8,12 +8,17 @@ from config import PORTFOLIO_OUTPUT_DIR, REPORT_DIR
 from data_pipeline import write_csv_outputs_atomically
 from reporting.interactive import generate_interactive_dashboard
 from reporting.plots import (
+    plot_allocation_heatmap,
     plot_drawdowns,
     plot_equity_curves,
+    plot_sector_correlation_heatmap,
+    plot_strategy_correlation_heatmap,
 )
 from reporting.tables import (
     build_summary_table,
 )
+from run_backtest import load_returns
+from universe import get_tickers_by_sector
 
 
 def load_backtest_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -49,7 +54,49 @@ def main() -> None:
     plot_equity_curves(values, REPORT_DIR / "equity_curves.png")
     plot_drawdowns(values, REPORT_DIR / "drawdowns.png")
 
-    # 3. Interactive dashboard (HTML)
+    # 3. Strategy Allocation Heatmaps across all 7 strategies
+    if not weights.empty:
+        all_strategies = [
+            "Equal Weight",
+            "Max Sharpe",
+            "Maximum Diversification",
+            "Risk Parity",
+            "Inverse Volatility",
+            "Hierarchical Risk Parity",
+            "Minimum Variance",
+        ]
+        for strat in all_strategies:
+            filename = f"allocation_heatmap_{strat.lower().replace(' ', '_')}.png"
+            plot_allocation_heatmap(weights, strat, REPORT_DIR / filename)
+
+    # 4. 6x6 Behavioral Sector Correlation Matrix (from underlying 30-stock returns)
+    try:
+        stock_returns = load_returns()
+        sector_mapping = get_tickers_by_sector()
+        sector_returns = pd.DataFrame(
+            {
+                sector: stock_returns[tickers].mean(axis=1)
+                for sector, tickers in sector_mapping.items()
+                if sector != "Benchmark" and len(tickers) > 0
+            }
+        )
+        if not sector_returns.empty:
+            sector_corr = sector_returns.corr()
+            plot_sector_correlation_heatmap(sector_corr, REPORT_DIR / "sector_correlation_heatmap.png")
+            write_csv_outputs_atomically(
+                {
+                    REPORT_DIR / "sector_correlation.csv": (sector_corr, {}),
+                }
+            )
+    except FileNotFoundError:
+        pass
+
+    # 5. 7x7 Strategy Return Correlation Matrix
+    strategy_returns = returns.drop(columns=["SPY"], errors="ignore")
+    if not strategy_returns.empty:
+        plot_strategy_correlation_heatmap(strategy_returns, REPORT_DIR / "strategy_correlation_heatmap.png")
+
+    # 6. Interactive dashboard (HTML)
     generate_interactive_dashboard(
         portfolio_values=values,
         summary=summary_table,

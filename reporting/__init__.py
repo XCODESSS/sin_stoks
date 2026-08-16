@@ -18,8 +18,11 @@ from reporting.metrics import (
     calculate_volatility,
 )
 from reporting.plots import (
+    plot_allocation_heatmap,
     plot_drawdowns,
     plot_equity_curves,
+    plot_sector_correlation_heatmap,
+    plot_strategy_correlation_heatmap,
 )
 from reporting.tables import (
     build_summary_table,
@@ -40,6 +43,9 @@ __all__ = [
     "calculate_tracking_error",
     "calculate_volatility",
     "generate_interactive_dashboard",
+    "plot_allocation_heatmap",
     "plot_drawdowns",
     "plot_equity_curves",
+    "plot_sector_correlation_heatmap",
+    "plot_strategy_correlation_heatmap",
 ]
