@@ -13,6 +13,7 @@ import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 
+from config import RISK_FREE_RATE
 from universe import get_sector
 
 STRATEGY_COLORS: dict[str, str] = {
@@ -74,7 +75,7 @@ def plot_equity_curves(portfolio_values: pd.DataFrame, save_path: Path) -> None:
             color=color,
         )
 
-    ax.set_title("Walk-Forward Out-of-Sample Portfolio Growth ($10,000 Initial Capital)", pad=14)
+    ax.set_title("Historical Walk-Forward Portfolio Growth ($10,000 Initial Capital)", pad=14)
     ax.set_xlabel("Date")
     ax.set_ylabel("Portfolio Value ($)")
     ax.legend(loc="upper left", frameon=True, facecolor="white", framealpha=0.9, fontsize=9.5)
@@ -135,8 +136,8 @@ def plot_performance_comparison(summary_table: pd.DataFrame, save_path: Path) ->
     bars1 = ax1.barh(y_pos, cagrs, color=colors, alpha=0.85, edgecolor="#2c3e50", height=0.6)
     ax1.set_yticks(y_pos)
     ax1.set_yticklabels(strategies, fontweight="bold", fontsize=9.5)
-    ax1.set_xlabel("Annualized Return — CAGR (%)")
-    ax1.set_title("Compound Annual Growth Rate (CAGR)", pad=12)
+    ax1.set_xlabel("Annualized Net Return — CAGR (%)")
+    ax1.set_title("Net Compound Annual Growth Rate (CAGR)", pad=12)
     for bar, val in zip(bars1, cagrs, strict=False):
         ax1.text(
             bar.get_width() + 0.3,
@@ -152,7 +153,7 @@ def plot_performance_comparison(summary_table: pd.DataFrame, save_path: Path) ->
     bars2 = ax2.barh(y_pos, sharpes, color=colors, alpha=0.85, edgecolor="#2c3e50", height=0.6)
     ax2.set_yticks(y_pos)
     ax2.set_yticklabels([])
-    ax2.set_xlabel("Sharpe Ratio (Rf = 2.0%)")
+    ax2.set_xlabel(f"Sharpe Ratio (Rf = {RISK_FREE_RATE:.1%})")
     ax2.set_title("Risk-Adjusted Performance (Sharpe Ratio)", pad=12)
     for bar, val in zip(bars2, sharpes, strict=False):
         ax2.text(

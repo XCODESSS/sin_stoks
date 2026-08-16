@@ -56,7 +56,7 @@ def build_interactive_equity_curves(portfolio_values: pd.DataFrame) -> go.Figure
 
     fig.update_layout(
         title=dict(
-            text="Walk-Forward Out-of-Sample Portfolio Growth",
+            text="Historical Walk-Forward Portfolio Growth",
             font=dict(size=20, family="Inter, sans-serif"),
             x=0.5,
         ),
@@ -366,7 +366,7 @@ def build_summary_html_table(summary: pd.DataFrame) -> str:
     table_html = f"""
     {css}
     <div class="summary-container">
-        <div class="summary-title">📊 Portfolio Performance Summary (2020-2025 Walk-Forward OOS)</div>
+        <div class="summary-title">📊 Historical Walk-Forward Performance Summary (2020-2025)</div>
         <table class="summary-table">
             <thead>
                 <tr>
@@ -374,7 +374,7 @@ def build_summary_html_table(summary: pd.DataFrame) -> str:
                     <th>Initial ($)</th>
                     <th>Final ($)</th>
                     <th>Total Return</th>
-                    <th>CAGR</th>
+                    <th>Net CAGR</th>
                     <th>Volatility</th>
                     <th>Sharpe</th>
                     <th>Sortino</th>
@@ -475,7 +475,7 @@ def generate_interactive_dashboard(
 <body>
     <div class="dashboard-header">
         <h1>Sin Stocks Portfolio Dashboard</h1>
-        <p>Walk-Forward Out-of-Sample Performance — 7 Strategies vs SPY Benchmark</p>
+        <p>Historical Walk-Forward Performance — 7 Strategies vs SPY Benchmark</p>
     </div>
 
     <div class="section">

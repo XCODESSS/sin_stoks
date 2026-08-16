@@ -13,7 +13,6 @@ from reporting.metrics import (
     calculate_calmar_ratio,
     calculate_information_ratio,
     calculate_max_drawdown,
-    calculate_net_cagr,
     calculate_sharpe_ratio,
     calculate_sortino_ratio,
     calculate_total_return,
@@ -27,9 +26,9 @@ def build_summary_table(
     returns: pd.DataFrame,
     portfolio_values: pd.DataFrame,
     weights: pd.DataFrame | None = None,
+    asset_log_returns: pd.DataFrame | None = None,
     risk_free_rate: float = RISK_FREE_RATE,
     benchmark_column: str = "SPY",
-    cost_bps: float = 10.0,
 ) -> pd.DataFrame:
     """Compute comprehensive risk, return, and friction metrics for all strategies."""
     rows: list[dict[str, object]] = []
@@ -55,13 +54,17 @@ def build_summary_table(
 
         has_benchmark = not benchmark_returns.empty and len(benchmark_returns) > 1
 
-        # Turnover & Net CAGR
-        if weights is not None and not weights.empty and strategy != benchmark_column:
-            turnover_val = calculate_turnover(weights, strategy)
-            net_cagr_val = calculate_net_cagr(cagr_val, turnover_val, cost_bps)
+        # Drift-aware recurring turnover. Portfolio values are already net of
+        # the transaction costs applied by the backtest engine.
+        if (
+            weights is not None
+            and not weights.empty
+            and asset_log_returns is not None
+            and strategy != benchmark_column
+        ):
+            turnover_val = calculate_turnover(weights, strategy, asset_log_returns)
         else:
             turnover_val = 0.0 if strategy == benchmark_column else np.nan
-            net_cagr_val = cagr_val
 
         rows.append(
             {
@@ -87,7 +90,6 @@ def build_summary_table(
                     calculate_information_ratio(s_returns, benchmark_returns) if has_benchmark else np.nan
                 ),
                 "Turnover": turnover_val,
-                "Net CAGR": net_cagr_val,
             }
         )
 

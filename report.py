@@ -45,9 +45,15 @@ def main() -> None:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
     returns, values, weights = load_backtest_data()
+    stock_returns = load_returns()
 
     # 1. Build comprehensive 14-column summary table
-    summary_table = build_summary_table(returns, values, weights=weights, cost_bps=10.0)
+    summary_table = build_summary_table(
+        returns,
+        values,
+        weights=weights,
+        asset_log_returns=stock_returns,
+    )
     write_csv_outputs_atomically(
         {
             REPORT_DIR / "summary.csv": (summary_table, {"index": False}),
@@ -71,7 +77,6 @@ def main() -> None:
 
     # Plot 5: 6x6 Behavioral Vice Sector Correlation Matrix
     try:
-        stock_returns = load_returns()
         sector_mapping = get_tickers_by_sector()
         sector_returns = pd.DataFrame(
             {
@@ -98,7 +103,6 @@ def main() -> None:
 
     # Plot 7: CELH Concentration Analysis (With vs Without CELH)
     try:
-        stock_returns = load_returns()
         spy_returns = load_spy_returns()
         res_no_celh = run_walk_forward_backtest(
             stock_returns.drop(columns=["CELH"], errors="ignore"),
@@ -123,7 +127,7 @@ def main() -> None:
     )
 
     print("\n" + "=" * 135)
-    print("  FINAL PORTFOLIO PERFORMANCE SUMMARY (2020-2025 OUT-OF-SAMPLE)")
+    print("  FINAL HISTORICAL WALK-FORWARD PERFORMANCE SUMMARY (2020-2025)")
     print("=" * 135)
     display_cols = [
         "Strategy",
@@ -140,7 +144,6 @@ def main() -> None:
         "Tracking Error",
         "Information Ratio",
         "Turnover",
-        "Net CAGR",
     ]
     formatted = summary_table[display_cols].copy()
     formatted["Total Return"] = formatted["Total Return"].map(lambda x: f"{x:.2%}")
@@ -159,7 +162,6 @@ def main() -> None:
         lambda x: f"{x:.4f}" if pd.notna(x) else "N/A"
     )
     formatted["Turnover"] = formatted["Turnover"].map(lambda x: f"{x:.2%}" if pd.notna(x) else "N/A")
-    formatted["Net CAGR"] = formatted["Net CAGR"].map(lambda x: f"{x:.2%}" if pd.notna(x) else "N/A")
 
     print(formatted.to_string(index=False))
     print("=" * 135)

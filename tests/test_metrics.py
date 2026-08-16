@@ -17,6 +17,7 @@ from reporting.metrics import (
     calculate_sortino_ratio,
     calculate_total_return,
     calculate_tracking_error,
+    calculate_turnover,
     calculate_volatility,
 )
 
@@ -91,3 +92,27 @@ def test_beta_alpha_and_tracking_error():
     assert np.isfinite(alpha_2x)
     assert te_2x > 0.0
     assert np.isfinite(ir_2x)
+
+
+def test_turnover_uses_drifted_pre_trade_weights():
+    """Recurring turnover must compare a new target with the prior drifted portfolio."""
+    index = pd.MultiIndex.from_tuples(
+        [
+            (pd.Timestamp("2020-01-01"), "Equal Weight"),
+            (pd.Timestamp("2021-01-01"), "Equal Weight"),
+        ],
+        names=["Rebalance Date", "Strategy"],
+    )
+    weights = pd.DataFrame([[0.5, 0.5], [0.5, 0.5]], index=index, columns=["A", "B"])
+    dates = pd.to_datetime(["2020-01-03", "2020-12-25"])
+    asset_log_returns = pd.DataFrame(
+        {
+            "A": np.log1p([0.10, 0.0]),
+            "B": np.log1p([0.0, 0.0]),
+        },
+        index=dates,
+    )
+
+    drifted_a = 0.55 / 1.05
+    expected_turnover = 0.5 * (abs(0.5 - drifted_a) + abs(0.5 - (1.0 - drifted_a)))
+    assert np.isclose(calculate_turnover(weights, "Equal Weight", asset_log_returns), expected_turnover)

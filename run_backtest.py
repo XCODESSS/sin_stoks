@@ -85,7 +85,7 @@ def run_orchestrator(
         end_date = pd.Timestamp(result.portfolio_values.index[-1])
         elapsed_years = (end_date - start_date).days / 365.25
         cagr = (final_val / init_val) ** (1.0 / elapsed_years) - 1.0 if elapsed_years > 0 else float("nan")
-        print(f"  {col:<26}: ${final_val:>10,.2f}  ({tot_ret:>+7.2%} | CAGR: {cagr:>6.2%})")
+        print(f"  {col:<26}: ${final_val:>10,.2f}  ({tot_ret:>+7.2%} | Net CAGR: {cagr:>6.2%})")
     print("=" * 70)
 
     return result

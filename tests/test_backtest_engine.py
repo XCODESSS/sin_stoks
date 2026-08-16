@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from backtest_engine import (
     BacktestConfig,
@@ -55,8 +56,8 @@ def test_training_and_holding_window_isolation():
     assert len(train.index.intersection(hold.index)) == 0
 
 
-def test_run_walk_forward_backtest_handles_misaligned_spy_and_prepends_start_row():
-    """Walk-forward results should align a shifted SPY series and keep the prepended start row first."""
+def test_run_walk_forward_backtest_prepends_start_row_and_applies_initial_cost():
+    """Walk-forward results keep the start row and charge the initial investment once."""
     dates = pd.date_range("2018-01-05", "2020-12-25", freq="W-FRI")
     returns = pd.DataFrame(
         {
@@ -65,7 +66,7 @@ def test_run_walk_forward_backtest_handles_misaligned_spy_and_prepends_start_row
         },
         index=dates,
     )
-    spy_dates = dates[dates >= pd.Timestamp("2020-01-10")]
+    spy_dates = dates[dates >= pd.Timestamp("2020-01-01")]
     spy_returns = pd.Series(np.log1p(np.full(len(spy_dates), 0.03)), index=spy_dates, name="SPY")
 
     def strategy_a(expected_returns: pd.Series, covariance: pd.DataFrame, config) -> pd.Series:
@@ -86,9 +87,36 @@ def test_run_walk_forward_backtest_handles_misaligned_spy_and_prepends_start_row
     assert list(result.weights.index.get_level_values("Strategy")) == ["Strategy A", "Strategy B"]
 
     first_period = result.period_returns.index[0]
-    assert first_period not in spy_returns.index
-    assert result.period_returns.loc[first_period, "SPY"] == 0.0
+    assert first_period in spy_returns.index
+    assert np.isclose(result.period_returns.loc[first_period, "SPY"], 0.03)
+    assert (result.turnover.loc[result.turnover["Rebalance Date"] == pd.Timestamp("2020-01-01"), "Turnover"] == 1.0).all()
 
-    expected_first_value = 10_000.0 * (1.0 + result.period_returns.loc[first_period, "SPY"])
-    assert np.isclose(result.portfolio_values.loc[first_period, "SPY"], expected_first_value)
+    gross_first_return_a = 0.6 * 0.01 + 0.4 * 0.02
+    expected_net_first_return_a = gross_first_return_a - (10.0 / 10_000.0)
+    assert np.isclose(result.period_returns.loc[first_period, "Strategy A"], expected_net_first_return_a)
     assert result.portfolio_values.index[0] == pd.Timestamp("2020-01-01")
+
+
+def test_run_walk_forward_backtest_rejects_missing_spy_dates():
+    """Benchmark gaps must fail instead of being converted into artificial zero returns."""
+    dates = pd.date_range("2018-01-05", "2020-12-25", freq="W-FRI")
+    returns = pd.DataFrame(
+        {
+            "A": np.log1p(np.full(len(dates), 0.01)),
+            "B": np.log1p(np.full(len(dates), 0.02)),
+        },
+        index=dates,
+    )
+    spy_dates = dates[dates >= pd.Timestamp("2020-01-10")]
+    spy_returns = pd.Series(np.log1p(np.full(len(spy_dates), 0.03)), index=spy_dates, name="SPY")
+
+    def equal_strategy(expected_returns: pd.Series, covariance: pd.DataFrame, config) -> pd.Series:
+        return pd.Series([0.5, 0.5], index=covariance.index)
+
+    with pytest.raises(ValueError, match="SPY benchmark returns are missing"):
+        run_walk_forward_backtest(
+            returns,
+            spy_returns,
+            {"Equal": equal_strategy},
+            BacktestConfig(rebalance_years=[2020]),
+        )

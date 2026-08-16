@@ -23,6 +23,7 @@ PROJECT_CONTEXT.md
 outputs/baseline/
 outputs/report/weekly_project_report_*.md
 outputs/report/dashboard.html
+AGENT.md
 
 # Temporary & Log files
 *.tmp

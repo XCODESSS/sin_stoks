@@ -3,15 +3,17 @@
 ## 1. Executive Summary & Core Research Question
 
 > **Primary Research Question:**  
-> _Did an out-of-sample portfolio of 30 companies catering to habitual, recurring human behaviors ("vice and habit stocks") outperform the S&P 500 (`SPY`) between 2020 and 2025, and is any outperformance robust or primarily attributable to estimation error and single-stock concentration?_
+> _Did a historical walk-forward portfolio of 30 companies catering to habitual, recurring human behaviors ("vice and habit stocks") outperform the S&P 500 (`SPY`) between 2020 and 2025, and is any outperformance robust or primarily attributable to estimation error and single-stock concentration?_
 
 ### The Verdict
 
-**The portfolio outperformed SPY in nominal gross returns, but the evidence does not support a robust claim of persistent outperformance.**
+**The portfolio outperformed SPY in historical returns net of the modeled 10 bps transaction cost, but the evidence does not support a robust claim of persistent outperformance.**
+
+Each annual portfolio is formed on January 1 from 2020 through 2025 using only information available before that rebalance date for return and covariance estimation. However, the 30-stock universe itself is a retrospective curated list rather than a point-in-time 2020 constituent set, so this study should be read as a historical backtest with walk-forward estimation rather than a strict out-of-sample constituent test.
 
 The Equal-Weight and Maximum Sharpe portfolios achieved CAGRs of **15.70%** and **16.07%**, respectively, compared with **14.85% for SPY**. However, this advantage is highly sensitive to the inclusion of **Celsius Holdings (`CELH`)**, which returned approximately **+2,788.8%** over the sample.
 
-When `CELH` is excluded, every tested vice portfolio strategy underperformed SPY. Ex-CELH CAGRs ranged from **7.30% to 13.48%**, compared with SPY's **14.85%**.
+When `CELH` is excluded, every strategy listed in the ex-CELH table underperformed SPY. Ex-CELH CAGRs ranged from **7.30% to 13.48%**, compared with SPY's **14.85%**.
 
 The evidence therefore supports a more nuanced conclusion:
 
@@ -19,20 +21,20 @@ The evidence therefore supports a more nuanced conclusion:
 
 ---
 
-# 2. Final Out-of-Sample Performance Summary (2020–2025)
+# 2. Historical Walk-Forward Performance Summary (2020–2025)
 
-The table presents the walk-forward performance across six out-of-sample years using a **$10,000 initial investment**, annual rebalancing, a **25% maximum position constraint**, and **10 bps transaction-cost friction**.
+The table presents the walk-forward performance across six annual rebalances in the historical backtest using a **$10,000 initial investment**, annual rebalancing, a **25% maximum position constraint**, and **10 bps transaction-cost friction**.
 
-| Strategy                     |    Final Value | Total Return |       CAGR | Volatility |     Sharpe |    Sortino | Max Drawdown |     Calmar |   Beta |    Alpha\* | Tracking Error | Info Ratio\* | Turnover |   Net CAGR |
-| ---------------------------- | -------------: | -----------: | ---------: | ---------: | ---------: | ---------: | -----------: | ---------: | -----: | ---------: | -------------: | -----------: | -------: | ---------: |
-| **Max Sharpe**               | **$24,400.54** |  **144.01%** | **16.07%** |     21.58% |     0.6114 |     0.5407 |      -33.33% |     0.4823 | 0.8347 |     +3.57% |         15.37% |      +0.1079 |   29.32% | **16.01%** |
-| **Equal Weight**             | **$23,932.92** |  **139.33%** | **15.70%** |     15.79% | **0.7464** | **0.6814** |  **-25.22%** | **0.6223** | 0.7005 |     +3.70% |         10.56% |      +0.0231 |    0.00% | **15.70%** |
-| **Maximum Diversification**  |     $23,252.84 |      132.53% |     15.14% |     16.19% |     0.7018 |     0.6574 |      -25.49% |     0.5941 | 0.6245 | **+4.16%** |         13.29% |      -0.0132 |   11.98% |     15.12% |
-| **SPY Benchmark**            |     $22,906.36 |      129.06% |     14.85% |     18.52% |     0.6229 |     0.5430 |      -28.64% |     0.5185 | 1.0000 |      0.00% |          0.00% |          N/A |    0.00% |     14.85% |
-| **Risk Parity**              |     $20,880.27 |      108.80% |     13.09% | **15.24%** |     0.6184 |     0.5520 |      -25.58% |     0.5118 | 0.6816 |     +1.56% |         10.38% |      -0.2034 |    3.08% |     13.08% |
-| **Inverse Volatility**       |     $20,075.98 |      100.76% |     12.35% |     15.33% |     0.5731 |     0.5133 |      -26.07% |     0.4737 | 0.7010 |     +0.70% |          9.86% |      -0.2793 |    1.98% |     12.35% |
-| **Hierarchical Risk Parity** |     $17,633.72 |       76.34% |      9.94% |     15.41% |     0.4309 |     0.3835 |      -27.19% |     0.3657 | 0.6995 |     -1.43% |         10.02% |      -0.4891 |   12.15% |      9.92% |
-| **Minimum Variance**         |     $15,266.69 |       52.67% |      7.33% |     15.54% |     0.2741 |     0.2492 |      -27.43% |     0.2671 | 0.6350 |     -3.07% |         12.20% |      -0.5969 |   12.70% |      7.30% |
+| Strategy                     |    Final Value | Total Return |   Net CAGR | Volatility |     Sharpe |    Sortino | Max Drawdown |     Calmar |   Beta |    Alpha\* | Tracking Error | Info Ratio\* | Drifted Turnover |
+| ---------------------------- | -------------: | -----------: | ---------: | ---------: | ---------: | ---------: | -----------: | ---------: | -----: | ---------: | -------------: | -----------: | ---------------: |
+| **Max Sharpe**               | **$24,400.54** |  **144.01%** | **16.07%** |     21.58% |     0.6114 |     0.5407 |      -33.33% |     0.4823 | 0.8347 |     +3.57% |         15.37% |      +0.1079 |           22.83% |
+| **Equal Weight**             | **$23,932.92** |  **139.33%** | **15.70%** |     15.79% | **0.7464** | **0.6814** |  **-25.22%** | **0.6223** | 0.7005 |     +3.70% |         10.56% |      +0.0231 |           13.49% |
+| **Maximum Diversification**  |     $23,252.84 |      132.53% |     15.14% |     16.19% |     0.7018 |     0.6574 |      -25.49% |     0.5941 | 0.6245 | **+4.16%** |         13.29% |      -0.0132 |           19.94% |
+| **SPY Benchmark**            |     $22,906.36 |      129.06% |     14.85% |     18.52% |     0.6229 |     0.5430 |      -28.64% |     0.5185 | 1.0000 |      0.00% |          0.00% |          N/A |            0.00% |
+| **Risk Parity**              |     $20,880.27 |      108.80% |     13.09% | **15.24%** |     0.6184 |     0.5520 |      -25.58% |     0.5118 | 0.6816 |     +1.56% |         10.38% |      -0.2034 |           11.95% |
+| **Inverse Volatility**       |     $20,075.98 |      100.76% |     12.35% |     15.33% |     0.5731 |     0.5133 |      -26.07% |     0.4737 | 0.7010 |     +0.70% |          9.86% |      -0.2793 |           10.66% |
+| **Hierarchical Risk Parity** |     $17,633.72 |       76.34% |      9.94% |     15.41% |     0.4309 |     0.3835 |      -27.19% |     0.3657 | 0.6995 |     -1.43% |         10.02% |      -0.4891 |           15.09% |
+| **Minimum Variance**         |     $15,266.69 |       52.67% |      7.33% |     15.54% |     0.2741 |     0.2492 |      -27.43% |     0.2671 | 0.6350 |     -3.07% |         12.20% |      -0.5969 |           15.34% |
 
 \* **Important:** Alpha and Information Ratio should only be interpreted according to the exact regression/active-return methodology used in the backtest. They should not automatically be described as Jensen's alpha or as `active return / tracking error` unless those are the formulas actually implemented.
 
@@ -83,7 +85,7 @@ The Max Sharpe strategy achieved a higher CAGR (**16.07%**) than Equal Weight, b
 - Sharpe ratio was lower (**0.6114 vs. 0.7464**),
 - volatility was higher (**21.58% vs. 15.79%**),
 - maximum drawdown was substantially larger (**-33.33% vs. -25.22%**),
-- turnover was much higher (**29.32% vs. 0%**).
+- drift-aware turnover was higher (**22.83% vs. 13.49%**).
 
 This is consistent with the **estimation-error problem in mean-variance optimization**: small errors in expected returns and covariance estimates can produce materially different portfolio weights.
 
@@ -290,9 +292,11 @@ This distinction should be stated explicitly.
 
 ## 6. Transaction Costs and Turnover
 
-Max Sharpe produced approximately **29.32% turnover**, substantially higher than Equal Weight.
+Max Sharpe produced approximately **22.83% recurring annual turnover**, compared with **13.49%** for Equal Weight. Equal Weight still trades at annual rebalances because its holdings drift away from equal weights during each holding period.
 
-The assumed **10 bps transaction cost** produced relatively small performance drag in the backtest.
+Turnover is reported as **one-way turnover**, defined as $\tau_t = \frac{1}{2}\sum_i |w_{i,t}^{target} - w_{i,t}^{drifted}|$. The recurring-turnover averages exclude the initial investment from cash. In accordance with the project plan, the modeled per-rebalance cost is $c\tau_t$, with $c = 10\,\text{bps} = 0.001$.
+
+If the gross first-period return after a rebalance is $g_{t,1}$, the engine records $r^{net}_{t,1} = g_{t,1} - c\tau_t$. The portfolio values and CAGRs in this report are computed from those net returns, so no second transaction-cost adjustment is applied during reporting.
 
 However, this may underestimate real-world implementation costs for smaller or less liquid companies.
 
@@ -373,7 +377,7 @@ This supports the hypothesis that the basket behaved relatively defensively duri
 
 **The return outperformance is not robust to the removal of CELH.**
 
-Every tested strategy underperformed SPY after removing CELH.
+Every strategy listed in the ex-CELH table underperformed SPY after removing CELH.
 
 Equal Weight:
 
@@ -397,7 +401,7 @@ The original hypothesis should therefore be **partially rejected and partially s
 
 **Not supported.**
 
-Although the full universe outperformed SPY, that result disappears when the extreme CELH outlier is removed.
+Although the full universe outperformed SPY, that result disappears in the ex-CELH table once the extreme CELH outlier is removed.
 
 The ex-CELH Equal-Weight portfolio produced only **10.88% CAGR**, compared with **14.85% for SPY**.
 

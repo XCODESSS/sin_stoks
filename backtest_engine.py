@@ -190,7 +190,15 @@ def run_walk_forward_backtest(
     if overlap.empty:
         raise ValueError("SPY benchmark and portfolio return indices do not overlap.")
 
-    aligned_spy = spy_returns.reindex(period_returns.index).fillna(0.0)
+    aligned_spy = spy_returns.reindex(period_returns.index)
+    if aligned_spy.isna().any():
+        missing_dates = aligned_spy.index[aligned_spy.isna()]
+        preview = ", ".join(date.strftime("%Y-%m-%d") for date in missing_dates[:10])
+        suffix = "" if len(missing_dates) <= 10 else f" ... and {len(missing_dates) - 10} more"
+        raise ValueError(
+            "SPY benchmark returns are missing for portfolio holding dates: "
+            f"{preview}{suffix}. Refresh or repair the benchmark data before reporting results."
+        )
     period_returns["SPY"] = aligned_spy
 
     # Build compounded portfolio values

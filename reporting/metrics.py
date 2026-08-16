@@ -141,20 +141,51 @@ def calculate_information_ratio(
     return float(excess_return / te)
 
 
-def calculate_turnover(weights: pd.DataFrame, strategy: str) -> float:
-    """Average annualized one-way turnover across rebalance dates: (1 / (T-1)) * sum(0.5 * sum(|w_t - w_{t-1}|))."""
+def calculate_turnover(
+    weights: pd.DataFrame,
+    strategy: str,
+    asset_log_returns: pd.DataFrame,
+) -> float:
+    """Average one-way rebalance turnover measured from drifted pre-trade weights.
+
+    The initial investment from cash is excluded from the average so the metric
+    describes recurring annual rebalancing activity.
+    """
     if weights.empty or "Strategy" not in weights.index.names:
-        return 0.0
+        return np.nan
     if strategy not in weights.index.get_level_values("Strategy"):
-        return 0.0
+        return np.nan
+
     strat_weights = weights.xs(strategy, level="Strategy")
+    strat_weights.index = pd.to_datetime(strat_weights.index)
+    strat_weights = strat_weights.sort_index()
     if len(strat_weights) <= 1:
         return 0.0
-    shifts = strat_weights.diff().abs().sum(axis=1).iloc[1:] * 0.5
-    return float(shifts.mean())
 
+    missing_assets = strat_weights.columns.difference(asset_log_returns.columns)
+    if not missing_assets.empty:
+        raise ValueError(f"Missing asset returns required for turnover: {list(missing_assets)}")
 
-def calculate_net_cagr(gross_cagr: float, turnover: float, cost_bps: float = 10.0) -> float:
-    """Net CAGR after accounting for annual turnover transaction costs."""
-    annual_drag = turnover * 2.0 * (cost_bps / 10_000.0)
-    return float(gross_cagr - annual_drag)
+    turnover_values: list[float] = []
+    for position in range(1, len(strat_weights)):
+        previous_date = strat_weights.index[position - 1]
+        rebalance_date = strat_weights.index[position]
+        previous_target = strat_weights.iloc[position - 1]
+        new_target = strat_weights.iloc[position]
+
+        holding_returns = asset_log_returns.loc[
+            (asset_log_returns.index >= previous_date) & (asset_log_returns.index < rebalance_date),
+            previous_target.index,
+        ]
+        if holding_returns.empty:
+            raise ValueError(
+                f"No holding-period returns available between {previous_date.date()} "
+                f"and {rebalance_date.date()} for {strategy}."
+            )
+
+        asset_growth = (1.0 + np.expm1(holding_returns)).cumprod().iloc[-1]
+        drifted_values = previous_target * asset_growth
+        drifted_weights = drifted_values / drifted_values.sum()
+        turnover_values.append(float((new_target - drifted_weights).abs().sum() / 2.0))
+
+    return float(np.mean(turnover_values))
