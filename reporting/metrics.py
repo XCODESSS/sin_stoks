@@ -182,6 +182,11 @@ def calculate_turnover(
                 f"No holding-period returns available between {previous_date.date()} "
                 f"and {rebalance_date.date()} for {strategy}."
             )
+        if holding_returns.isna().any().any():
+            raise ValueError(
+                f"Missing holding-period returns between {previous_date.date()} "
+                f"and {rebalance_date.date()} for {strategy}."
+            )
 
         asset_growth = (1.0 + np.expm1(holding_returns)).cumprod().iloc[-1]
         drifted_values = previous_target * asset_growth
