@@ -139,3 +139,22 @@ def calculate_information_ratio(
         return np.nan
     excess_return = (aligned.iloc[:, 0].mean() - aligned.iloc[:, 1].mean()) * periods_per_year
     return float(excess_return / te)
+
+
+def calculate_turnover(weights: pd.DataFrame, strategy: str) -> float:
+    """Average annualized one-way turnover across rebalance dates: (1 / (T-1)) * sum(0.5 * sum(|w_t - w_{t-1}|))."""
+    if weights.empty or "Strategy" not in weights.index.names:
+        return 0.0
+    if strategy not in weights.index.get_level_values("Strategy"):
+        return 0.0
+    strat_weights = weights.xs(strategy, level="Strategy")
+    if len(strat_weights) <= 1:
+        return 0.0
+    shifts = strat_weights.diff().abs().sum(axis=1).iloc[1:] * 0.5
+    return float(shifts.mean())
+
+
+def calculate_net_cagr(gross_cagr: float, turnover: float, cost_bps: float = 10.0) -> float:
+    """Net CAGR after accounting for annual turnover transaction costs."""
+    annual_drag = turnover * 2.0 * (cost_bps / 10_000.0)
+    return float(gross_cagr - annual_drag)

@@ -13,10 +13,12 @@ from reporting.metrics import (
     calculate_calmar_ratio,
     calculate_information_ratio,
     calculate_max_drawdown,
+    calculate_net_cagr,
     calculate_sharpe_ratio,
     calculate_sortino_ratio,
     calculate_total_return,
     calculate_tracking_error,
+    calculate_turnover,
     calculate_volatility,
 )
 
@@ -24,10 +26,12 @@ from reporting.metrics import (
 def build_summary_table(
     returns: pd.DataFrame,
     portfolio_values: pd.DataFrame,
+    weights: pd.DataFrame | None = None,
     risk_free_rate: float = RISK_FREE_RATE,
     benchmark_column: str = "SPY",
+    cost_bps: float = 10.0,
 ) -> pd.DataFrame:
-    """Compute comprehensive risk and return performance metrics for all strategies."""
+    """Compute comprehensive risk, return, and friction metrics for all strategies."""
     rows: list[dict[str, object]] = []
     benchmark_returns = (
         returns[benchmark_column].dropna() if benchmark_column in returns.columns else pd.Series(dtype=float)
@@ -47,8 +51,17 @@ def build_summary_table(
         init_val = round(float(s_values.iloc[0]), 2)
         final_val = round(float(s_values.iloc[-1]), 2)
         ret_amt = round(final_val - init_val, 2)
+        cagr_val = calculate_cagr(s_values)
 
         has_benchmark = not benchmark_returns.empty and len(benchmark_returns) > 1
+
+        # Turnover & Net CAGR
+        if weights is not None and not weights.empty and strategy != benchmark_column:
+            turnover_val = calculate_turnover(weights, strategy)
+            net_cagr_val = calculate_net_cagr(cagr_val, turnover_val, cost_bps)
+        else:
+            turnover_val = 0.0 if strategy == benchmark_column else np.nan
+            net_cagr_val = cagr_val
 
         rows.append(
             {
@@ -57,7 +70,7 @@ def build_summary_table(
                 "Final Value ($)": final_val,
                 "Return Amount ($)": ret_amt,
                 "Total Return": calculate_total_return(s_values),
-                "CAGR": calculate_cagr(s_values),
+                "CAGR": cagr_val,
                 "Volatility": calculate_volatility(s_returns),
                 "Sharpe Ratio": calculate_sharpe_ratio(s_returns, risk_free_rate),
                 "Sortino Ratio": calculate_sortino_ratio(s_returns, risk_free_rate),
@@ -73,6 +86,8 @@ def build_summary_table(
                 "Information Ratio": (
                     calculate_information_ratio(s_returns, benchmark_returns) if has_benchmark else np.nan
                 ),
+                "Turnover": turnover_val,
+                "Net CAGR": net_cagr_val,
             }
         )
 
