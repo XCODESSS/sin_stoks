@@ -209,13 +209,13 @@ def plot_allocation_heatmap(
 
 
 def plot_sector_correlation_heatmap(sector_correlation: pd.DataFrame, save_path: Path) -> None:
-    """6x6 Behavioral Vice Sector correlation heatmap with cell annotations."""
+    """6x6 Behavioral Vice Sector correlation heatmap with in-cell numerical annotations."""
     sectors = list(sector_correlation.index)
     data = sector_correlation.to_numpy()
 
     _apply_theme()
-    fig, ax = plt.subplots(figsize=(9, 8))
-    im = ax.imshow(data, cmap="RdBu_r", vmin=1.0, vmax=1.0, interpolation="nearest")
+    fig, ax = plt.subplots(figsize=(9.5, 8.5))
+    im = ax.imshow(data, cmap="YlGnBu", vmin=0.15, vmax=1.0, interpolation="nearest")
 
     ax.set_xticks(range(len(sectors)))
     ax.set_xticklabels(sectors, rotation=25, ha="right", fontsize=9.5, fontweight="bold")
@@ -226,15 +226,15 @@ def plot_sector_correlation_heatmap(sector_correlation: pd.DataFrame, save_path:
     for r in range(len(sectors)):
         for c in range(len(sectors)):
             val = data[r, c]
-            text_color = "white" if abs(val) > 0.65 else "#1a252f"
+            text_color = "white" if val > 0.65 else "#1a252f"
             ax.text(
                 c,
                 r,
-                f"{val:.2f}",
+                f"{val:.3f}",
                 ha="center",
                 va="center",
                 color=text_color,
-                fontsize=11,
+                fontsize=10.5,
                 fontweight="bold",
             )
 
@@ -257,7 +257,7 @@ def plot_strategy_correlation_heatmap(strategy_returns: pd.DataFrame, save_path:
 
     _apply_theme()
     fig, ax = plt.subplots(figsize=(10, 8.5))
-    im = ax.imshow(data, cmap="RdBu_r", vmin=-1.0, vmax=1.0, interpolation="nearest")
+    im = ax.imshow(data, cmap="Blues", vmin=0.50, vmax=1.0, interpolation="nearest")
 
     ax.set_xticks(range(len(strategies)))
     ax.set_xticklabels(strategies, rotation=28, ha="right", fontsize=9, fontweight="bold")
@@ -268,7 +268,7 @@ def plot_strategy_correlation_heatmap(strategy_returns: pd.DataFrame, save_path:
     for r in range(len(strategies)):
         for c in range(len(strategies)):
             val = data[r, c]
-            text_color = "white" if abs(val) > 0.65 else "#1a252f"
+            text_color = "white" if val > 0.82 else "#1a252f"
             ax.text(
                 c,
                 r,
