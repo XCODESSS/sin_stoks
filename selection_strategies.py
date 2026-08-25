@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
+from sklearn.cluster import HDBSCAN
 
 from config import (
     SELECTION_CLUSTER_COUNT,
@@ -199,6 +200,40 @@ def select_partitioned(
     selected = _fill_diversified(
         selected,
         list(inputs.distance.index),
+        inputs,
+        config,
+        adjusted_scores,
+    )
+    return SelectionResult(selected_tickers=selected, labels=labels, adjusted_scores=adjusted_scores)
+
+
+def select_density(
+    inputs: SelectionFeatures,
+    config: SelectionConfig | None = None,
+) -> SelectionResult:
+    """Select cluster representatives and diversified HDBSCAN candidates."""
+    config = config or SelectionConfig()
+    _validate_selection_inputs(inputs, config)
+    distance = _validated_distance(inputs.distance)
+    model = HDBSCAN(
+        min_cluster_size=config.min_cluster_size,
+        min_samples=config.min_samples,
+        metric="precomputed",
+        cluster_selection_method="eom",
+        allow_single_cluster=True,
+        store_centers=None,
+    )
+    labels = pd.Series(model.fit_predict(distance.to_numpy()), index=distance.index, name="cluster")
+    adjusted_scores = inputs.base_score.copy().rename("adjusted_score")
+
+    representatives: list[str] = []
+    for label in sorted(value for value in labels.unique() if value != -1):
+        members = list(labels.index[labels == label])
+        representatives.append(_rank_candidates(inputs.base_score, members)[0])
+    selected = _rank_candidates(inputs.base_score, representatives)[: config.target_count]
+    selected = _fill_diversified(
+        selected,
+        list(distance.index),
         inputs,
         config,
         adjusted_scores,

@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from selection_features import SelectionFeatures
-from selection_strategies import SelectionConfig, pam_labels, select_partitioned
+from selection_strategies import SelectionConfig, pam_labels, select_density, select_partitioned
 
 
 def block_distance_frame() -> pd.DataFrame:
@@ -109,3 +109,68 @@ def test_partitioned_selector_handles_single_asset_clusters():
 
     assert len(result.selected_tickers) == 12
     assert result.labels.nunique() == 12
+
+
+def make_density_features() -> SelectionFeatures:
+    coordinates = np.array([0.00, 0.01, 0.02, 0.03, 0.40, 0.41, 0.42, 0.43, 1.00, 3.00])
+    tickers = [f"D{position:02d}" for position in range(len(coordinates))]
+    distance_values = np.abs(coordinates[:, None] - coordinates[None, :]) / coordinates.max()
+    features = pd.DataFrame(
+        {
+            "value_rank": np.linspace(0.1, 1.0, len(tickers)),
+            "size_rank": np.linspace(1.0, 0.1, len(tickers)),
+            "sharpe_rank": np.linspace(0.2, 0.9, len(tickers)),
+            "trailing_sharpe": np.linspace(-0.5, 1.5, len(tickers)),
+        },
+        index=tickers,
+    )
+    base_score = (0.5 * features["value_rank"] + 0.5 * features["sharpe_rank"]).rename(
+        "base_score"
+    )
+    correlation = 1.0 - 2.0 * distance_values**2
+    np.fill_diagonal(correlation, 1.0)
+    return SelectionFeatures(
+        features=features,
+        base_score=base_score,
+        correlation=pd.DataFrame(correlation, index=tickers, columns=tickers),
+        distance=pd.DataFrame(distance_values, index=tickers, columns=tickers),
+    )
+
+
+def test_density_selector_uses_precomputed_distance_and_keeps_noise_eligible():
+    result = select_density(
+        make_density_features(),
+        SelectionConfig(target_count=8, partition_count=6, min_cluster_size=3, min_samples=3),
+    )
+
+    assert len(result.selected_tickers) == 8
+    assert len(set(result.selected_tickers)) == 8
+    assert -1 in set(result.labels)
+    noise = set(result.labels.index[result.labels == -1])
+    assert noise.intersection(result.selected_tickers)
+
+
+def test_density_selector_is_deterministic_and_does_not_mutate_distance():
+    inputs = make_density_features()
+    original_distance = inputs.distance.copy()
+    config = SelectionConfig(target_count=8, partition_count=6)
+
+    first = select_density(inputs, config)
+    second = select_density(inputs, config)
+
+    assert first.selected_tickers == second.selected_tickers
+    pd.testing.assert_series_equal(first.labels, second.labels)
+    pd.testing.assert_frame_equal(inputs.distance, original_distance)
+
+
+def test_density_selector_handles_all_noise(monkeypatch):
+    inputs = make_asset_features(12)
+
+    def all_noise(self, values):
+        return np.full(len(values), -1)
+
+    monkeypatch.setattr("selection_strategies.HDBSCAN.fit_predict", all_noise)
+    result = select_density(inputs, SelectionConfig(target_count=8, partition_count=6))
+
+    assert len(result.selected_tickers) == 8
+    assert set(result.labels) == {-1}
