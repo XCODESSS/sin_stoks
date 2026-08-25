@@ -10,6 +10,8 @@ DATA_DIR = BASE_DIR / "data"
 OUTPUT_DIR = BASE_DIR / "outputs"
 PORTFOLIO_OUTPUT_DIR = OUTPUT_DIR / "portfolio_backtest"
 REPORT_DIR = OUTPUT_DIR / "report"
+FUNDAMENTALS_PATH = DATA_DIR / "fundamentals_point_in_time.csv"
+SELECTION_OUTPUT_DIR = OUTPUT_DIR / "selection_experiment"
 
 # Data download & date boundaries
 START_DATE = "2016-01-01"
@@ -29,6 +31,17 @@ STARTING_VALUE = 10_000.0  # USD initial notional
 RISK_FREE_RATE = 0.04  # 4% annual risk-free rate
 DEFAULT_MAX_WEIGHT = 0.25  # 25% single-asset position cap
 DEFAULT_TRANSACTION_COST_BPS = 10.0  # 10 bps default (0.0010 per 1.00 turnover)
+
+# Preregistered stock-selection experiment parameters
+SELECTION_TARGET_COUNT = 12
+SELECTION_CLUSTER_COUNT = 6
+SELECTION_LOOKBACK_WEEKS = 104
+SELECTION_MIN_CLUSTER_SIZE = 3
+SELECTION_MIN_SAMPLES = 3
+SELECTION_FEATURE_WEIGHT = 0.50
+SELECTION_CORRELATION_WEIGHT = 0.50
+SELECTION_DIVERSIFICATION_PENALTY = 0.25
+SELECTION_MIN_COVERAGE = 0.80
 
 # Data cleaning policies
 # Weekly returns with |log return| > 0.50 are filtered as corporate merger / data artifacts (e.g. KDP July 2018)
