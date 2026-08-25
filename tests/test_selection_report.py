@@ -1,0 +1,109 @@
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+
+from report_selection_experiment import (
+    CANDIDATE_STRATEGIES,
+    RunArtifacts,
+    build_annual_comparison,
+    evaluate_promotion_gates,
+    generate_diagnostic_graphs,
+)
+
+
+def test_annual_returns_compound_weekly_returns():
+    returns = pd.DataFrame(
+        {"Candidate": [0.10, -0.10], "Equal Weight": [0.05, 0.05]},
+        index=pd.to_datetime(["2020-01-03", "2020-01-10"]),
+    )
+
+    annual = build_annual_comparison(returns)
+
+    assert np.isclose(annual.loc[2020, "Candidate"], 1.10 * 0.90 - 1.0)
+    assert np.isclose(
+        annual.loc[2020, "Candidate vs Equal Weight"],
+        (1.10 * 0.90) - (1.05 * 1.05),
+    )
+
+
+def make_gate_artifacts(candidate_return: float, equal_weight_return: float = 0.05) -> RunArtifacts:
+    dates = pd.to_datetime([f"{year}-01-03" for year in range(2020, 2026)])
+    returns = pd.DataFrame(
+        {
+            "Equal Weight": equal_weight_return,
+            "Partitioning Selection": candidate_return,
+            "Density Selection": candidate_return - 0.005,
+            "SPY": 0.04,
+        },
+        index=dates,
+    )
+    values = 10_000.0 * (1.0 + returns).cumprod()
+    values = pd.concat(
+        [pd.DataFrame(10_000.0, index=[pd.Timestamp("2020-01-01")], columns=returns.columns), values]
+    )
+    weight_index = pd.MultiIndex.from_product(
+        [dates, ["Equal Weight", *CANDIDATE_STRATEGIES]],
+        names=["Rebalance Date", "Strategy"],
+    )
+    weights = pd.DataFrame(0.5, index=weight_index, columns=["A", "B"])
+    turnover = pd.DataFrame(
+        [
+            {
+                "Rebalance Date": date,
+                "Strategy": strategy,
+                "Turnover": 1.0 if position == 0 else 0.10,
+                "Cost": 0.001 if position == 0 else 0.0001,
+            }
+            for strategy in ["Equal Weight", *CANDIDATE_STRATEGIES]
+            for position, date in enumerate(dates)
+        ]
+    )
+    audit = pd.DataFrame(
+        [
+            {
+                "rebalance_date": date,
+                "available_date": date - pd.Timedelta(days=30),
+                "strategy": strategy,
+                "ticker": ticker,
+                "selected": True,
+            }
+            for date in dates
+            for strategy in CANDIDATE_STRATEGIES
+            for ticker in ["A", "B"]
+        ]
+    )
+    return RunArtifacts(
+        returns=returns,
+        values=values,
+        weights=weights,
+        turnover=turnover,
+        audit=audit,
+        metadata={"asset_count": 2},
+    )
+
+
+def test_diagnostic_graphs_are_written(tmp_path):
+    artifacts = make_gate_artifacts(candidate_return=0.08)
+    annual = build_annual_comparison(artifacts.returns)
+
+    generate_diagnostic_graphs(artifacts, annual, tmp_path)
+
+    assert (tmp_path / "selection_equity_curves.png").exists()
+    assert (tmp_path / "selection_drawdowns.png").exists()
+    assert (tmp_path / "annual_strategy_returns.png").exists()
+    assert (tmp_path / "selection_frequency.png").exists()
+
+
+def test_candidate_fails_when_ex_celh_advantage_reverses(monkeypatch):
+    asset_dates = pd.to_datetime([f"{year}-01-03" for year in range(2020, 2026)])
+    asset_returns = pd.DataFrame(0.01, index=asset_dates, columns=["A", "B"])
+    monkeypatch.setattr("report_selection_experiment.load_returns", lambda: asset_returns)
+    full = make_gate_artifacts(candidate_return=0.08)
+    ex_celh = make_gate_artifacts(candidate_return=0.02)
+
+    decisions = evaluate_promotion_gates(full, ex_celh, quality_checks_passed=True)
+
+    partitioning = decisions["Partitioning Selection"]
+    assert partitioning["gates"]["ex_celh_cagr_exceeds_equal_weight"] is False
+    assert partitioning["research_promising"] is False
