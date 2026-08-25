@@ -294,6 +294,26 @@ def generate_diagnostic_graphs(
     _save_figure(figure, output_dir / "selection_frequency.png")
 
 
+def _markdown_table(frame: pd.DataFrame, include_index: bool = False) -> str:
+    display = frame.reset_index() if include_index else frame.copy()
+    headers = [str(column) for column in display.columns]
+
+    def format_value(value: object) -> str:
+        if pd.isna(value):
+            return ""
+        if isinstance(value, float):
+            return f"{value:.6g}"
+        return str(value).replace("|", "\\|")
+
+    header = "| " + " | ".join(headers) + " |"
+    separator = "| " + " | ".join(["---"] * len(headers)) + " |"
+    rows = [
+        "| " + " | ".join(format_value(value) for value in row) + " |"
+        for row in display.itertuples(index=False, name=None)
+    ]
+    return "\n".join([header, separator, *rows])
+
+
 def _build_markdown_report(
     decisions: dict[str, object],
     summary: pd.DataFrame,
@@ -314,11 +334,11 @@ def _build_markdown_report(
             "",
             "## Full-Universe Metrics",
             "",
-            summary.to_markdown(index=False),
+            _markdown_table(summary),
             "",
             "## Calendar-Year Returns",
             "",
-            annual.to_markdown(),
+            _markdown_table(annual, include_index=True),
             "",
             "Only six annual holding periods are available, so no reliable statistical significance "
             "or p-value claim is made. Full and ex-CELH results, coverage, turnover, and integrity gates "
