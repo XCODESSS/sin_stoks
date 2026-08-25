@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
 from sklearn.cluster import HDBSCAN
 
+from backtest_engine import RebalanceContext
 from config import (
     SELECTION_CLUSTER_COUNT,
     SELECTION_DIVERSIFICATION_PENALTY,
@@ -15,7 +17,9 @@ from config import (
     SELECTION_MIN_SAMPLES,
     SELECTION_TARGET_COUNT,
 )
-from selection_features import SelectionFeatures
+from fundamental_data import fundamentals_as_of
+from portfolio_strategies import StrategyConfig, equal_weight, validate_projected_weights
+from selection_features import SelectionFeatures, build_selection_features
 
 _PAM_MAX_ITERATIONS = 100
 _COST_TOLERANCE = 1e-12
@@ -39,6 +43,84 @@ class SelectionResult:
     selected_tickers: list[str]
     labels: pd.Series
     adjusted_scores: pd.Series
+
+
+SelectorCallable = Callable[[SelectionFeatures, SelectionConfig], SelectionResult]
+
+
+class SelectionStrategy:
+    """Contextual equal-weight selector with point-in-time audit records."""
+
+    def __init__(
+        self,
+        name: str,
+        fundamentals: pd.DataFrame,
+        selector: SelectorCallable,
+        selection_config: SelectionConfig | None = None,
+    ) -> None:
+        self.name = name
+        self._fundamentals = fundamentals.copy()
+        self._selector = selector
+        self._selection_config = selection_config or SelectionConfig()
+        self._audit_rows: list[dict[str, object]] = []
+
+    def __call__(self, context: RebalanceContext, config: StrategyConfig) -> pd.Series:
+        snapshot = fundamentals_as_of(
+            self._fundamentals,
+            context.rebalance_date,
+            context.covariance.index,
+        )
+        eligible_tickers = list(snapshot.index)
+        selection_inputs = build_selection_features(
+            context.training_returns.loc[:, eligible_tickers],
+            snapshot,
+        )
+        selection = self._selector(selection_inputs, self._selection_config)
+        selected_tickers = selection.selected_tickers
+        selected_weights = equal_weight(
+            context.expected_returns.loc[selected_tickers],
+            context.covariance.loc[selected_tickers, selected_tickers],
+            config,
+        )
+        weights = selected_weights.reindex(context.covariance.index, fill_value=0.0)
+        validate_projected_weights(weights.to_numpy(), config.max_weight, self.name)
+        self._append_audit(context.rebalance_date, snapshot, selection_inputs, selection)
+        return weights
+
+    def _append_audit(
+        self,
+        rebalance_date: pd.Timestamp,
+        snapshot: pd.DataFrame,
+        inputs: SelectionFeatures,
+        selection: SelectionResult,
+    ) -> None:
+        selected = set(selection.selected_tickers)
+        for ticker in inputs.features.index:
+            feature_row = inputs.features.loc[ticker]
+            self._audit_rows.append(
+                {
+                    "rebalance_date": rebalance_date,
+                    "strategy": self.name,
+                    "ticker": ticker,
+                    "selected": ticker in selected,
+                    "cluster_label": int(selection.labels.loc[ticker]),
+                    "trailing_pe": snapshot.loc[ticker, "trailing_pe"],
+                    "market_cap": snapshot.loc[ticker, "market_cap"],
+                    "available_date": snapshot.loc[ticker, "available_date"],
+                    "value_rank": feature_row["value_rank"],
+                    "size_rank": feature_row["size_rank"],
+                    "sharpe_rank": feature_row["sharpe_rank"],
+                    "base_score": inputs.base_score.loc[ticker],
+                    "adjusted_score": selection.adjusted_scores.loc[ticker],
+                }
+            )
+
+    def audit_frame(self) -> pd.DataFrame:
+        """Return a defensive, deterministically ordered audit copy."""
+        audit = pd.DataFrame(self._audit_rows)
+        if audit.empty:
+            return audit
+        return audit.sort_values(["rebalance_date", "strategy", "ticker"]).reset_index(drop=True).copy()
 
 
 def _validated_distance(distance: pd.DataFrame) -> pd.DataFrame:

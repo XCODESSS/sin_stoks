@@ -4,8 +4,16 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from backtest_engine import RebalanceContext
+from portfolio_strategies import StrategyConfig
 from selection_features import SelectionFeatures
-from selection_strategies import SelectionConfig, pam_labels, select_density, select_partitioned
+from selection_strategies import (
+    SelectionConfig,
+    SelectionStrategy,
+    pam_labels,
+    select_density,
+    select_partitioned,
+)
 
 
 def block_distance_frame() -> pd.DataFrame:
@@ -161,6 +169,77 @@ def test_density_selector_is_deterministic_and_does_not_mutate_distance():
     assert first.selected_tickers == second.selected_tickers
     pd.testing.assert_series_equal(first.labels, second.labels)
     pd.testing.assert_frame_equal(inputs.distance, original_distance)
+
+
+def make_rebalance_context(n_assets: int = 30) -> RebalanceContext:
+    tickers = [f"T{position:02d}" for position in range(n_assets)]
+    dates = pd.date_range("2018-09-14", periods=120, freq="W-FRI")
+    phases = np.linspace(0.0, np.pi, n_assets)
+    simple_returns = np.column_stack(
+        [0.002 + 0.01 * np.sin(np.linspace(0.0, 8.0, len(dates)) + phase) for phase in phases]
+    )
+    training_returns = pd.DataFrame(np.log1p(simple_returns), index=dates, columns=tickers)
+    covariance = pd.DataFrame(np.eye(n_assets) * 0.04, index=tickers, columns=tickers)
+    expected_returns = pd.Series(np.linspace(0.05, 0.20, n_assets), index=tickers)
+    return RebalanceContext(
+        rebalance_date=pd.Timestamp("2021-01-01"),
+        training_returns=training_returns,
+        expected_returns=expected_returns,
+        covariance=covariance,
+    )
+
+
+def make_point_in_time_fundamentals(n_assets: int = 30) -> pd.DataFrame:
+    tickers = [f"T{position:02d}" for position in range(n_assets)]
+    return pd.DataFrame(
+        {
+            "ticker": tickers,
+            "observation_date": pd.Timestamp("2020-09-30"),
+            "available_date": pd.Timestamp("2020-11-15"),
+            "trailing_pe": np.linspace(10.0, 35.0, n_assets),
+            "market_cap": np.geomspace(1e9, 1e12, n_assets),
+            "earnings_positive": True,
+            "source": "Synthetic",
+        }
+    )
+
+
+def test_selection_strategy_returns_full_universe_capped_weights_and_audit():
+    context = make_rebalance_context()
+    strategy = SelectionStrategy(
+        name="Partitioning Selection",
+        fundamentals=make_point_in_time_fundamentals(),
+        selector=select_partitioned,
+        selection_config=SelectionConfig(),
+    )
+
+    weights = strategy(context, StrategyConfig(max_weight=0.25, risk_free_rate=0.04))
+
+    assert list(weights.index) == list(context.covariance.index)
+    assert np.isclose(weights.sum(), 1.0)
+    assert (weights > 0).sum() == 12
+    assert np.allclose(weights[weights > 0], 1.0 / 12.0)
+    assert weights.max() <= 0.25
+    audit = strategy.audit_frame()
+    assert set(audit["strategy"]) == {"Partitioning Selection"}
+    assert audit["selected"].sum() == 12
+    assert (audit["available_date"] < audit["rebalance_date"]).all()
+
+
+def test_future_fundamental_record_does_not_change_earlier_weights():
+    context = make_rebalance_context()
+    fundamentals = make_point_in_time_fundamentals()
+    future_record = fundamentals.iloc[[0]].copy()
+    future_record["observation_date"] = pd.Timestamp("2021-03-31")
+    future_record["available_date"] = pd.Timestamp("2021-05-01")
+    future_record["trailing_pe"] = 1.0
+    with_future = pd.concat([fundamentals, future_record], ignore_index=True)
+    config = StrategyConfig(max_weight=0.25, risk_free_rate=0.04)
+
+    first = SelectionStrategy("Partitioning Selection", fundamentals, select_partitioned)(context, config)
+    second = SelectionStrategy("Partitioning Selection", with_future, select_partitioned)(context, config)
+
+    pd.testing.assert_series_equal(first, second)
 
 
 def test_density_selector_handles_all_noise(monkeypatch):
