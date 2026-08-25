@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -42,6 +42,28 @@ class BacktestResult:
     weights: pd.DataFrame
     turnover: pd.DataFrame
     config: BacktestConfig
+
+
+@dataclass(frozen=True)
+class RebalanceContext:
+    """Point-in-time inputs available to a strategy at one rebalance."""
+
+    rebalance_date: pd.Timestamp
+    training_returns: pd.DataFrame
+    expected_returns: pd.Series
+    covariance: pd.DataFrame
+
+
+ContextStrategyCallable = Callable[[RebalanceContext, StrategyConfig], pd.Series]
+
+
+def adapt_legacy_strategy(strategy: StrategyCallable) -> ContextStrategyCallable:
+    """Adapt an expected-return/covariance strategy to the contextual API."""
+
+    def adapted(context: RebalanceContext, config: StrategyConfig) -> pd.Series:
+        return strategy(context.expected_returns, context.covariance, config)
+
+    return adapted
 
 
 def get_rebalance_dates(rebalance_years: list[int]) -> list[pd.Timestamp]:
@@ -132,13 +154,13 @@ def build_spy_benchmark(
     return spy_returns, spy_values
 
 
-def run_walk_forward_backtest(
+def run_contextual_walk_forward_backtest(
     returns: pd.DataFrame,
     spy_log_returns: pd.Series,
-    strategies: Mapping[str, StrategyCallable],
+    strategies: Mapping[str, ContextStrategyCallable],
     config: BacktestConfig | None = None,
 ) -> BacktestResult:
-    """Execute the full walk-forward portfolio optimization and backtesting loop."""
+    """Execute contextual strategies through the shared walk-forward loop."""
     cfg = config or BacktestConfig()
     rebalance_dates = get_rebalance_dates(cfg.rebalance_years)
     strategy_cfg = StrategyConfig(max_weight=cfg.max_weight, risk_free_rate=cfg.risk_free_rate)
@@ -155,9 +177,15 @@ def run_walk_forward_backtest(
 
         covariance = build_covariance(train, periods_per_year=WEEKS_PER_YEAR)
         expected_returns = build_expected_returns(train, periods_per_year=WEEKS_PER_YEAR)
+        context = RebalanceContext(
+            rebalance_date=rebalance_date,
+            training_returns=train,
+            expected_returns=expected_returns,
+            covariance=covariance,
+        )
 
         for strat_name, strat_fn in strategies.items():
-            weights = strat_fn(expected_returns, covariance, strategy_cfg)
+            weights = strat_fn(context, strategy_cfg)
             weight_rows[(rebalance_date, strat_name)] = weights
 
             if strat_name in previous_drifted_weights:
@@ -214,4 +242,22 @@ def run_walk_forward_backtest(
         weights=weights_df,
         turnover=turnover_df,
         config=cfg,
+    )
+
+
+def run_walk_forward_backtest(
+    returns: pd.DataFrame,
+    spy_log_returns: pd.Series,
+    strategies: Mapping[str, StrategyCallable],
+    config: BacktestConfig | None = None,
+) -> BacktestResult:
+    """Execute legacy strategies through the contextual walk-forward engine."""
+    contextual_strategies = {
+        name: adapt_legacy_strategy(strategy) for name, strategy in strategies.items()
+    }
+    return run_contextual_walk_forward_backtest(
+        returns,
+        spy_log_returns,
+        contextual_strategies,
+        config,
     )

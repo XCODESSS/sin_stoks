@@ -8,9 +8,11 @@ import pytest
 
 from backtest_engine import (
     BacktestConfig,
+    adapt_legacy_strategy,
     apply_weights,
     get_holding_period,
     get_training_window,
+    run_contextual_walk_forward_backtest,
     run_walk_forward_backtest,
 )
 
@@ -95,6 +97,64 @@ def test_run_walk_forward_backtest_prepends_start_row_and_applies_initial_cost()
     expected_net_first_return_a = gross_first_return_a - (10.0 / 10_000.0)
     assert np.isclose(result.period_returns.loc[first_period, "Strategy A"], expected_net_first_return_a)
     assert result.portfolio_values.index[0] == pd.Timestamp("2020-01-01")
+
+
+def test_contextual_adapter_matches_legacy_engine_exactly():
+    dates = pd.date_range("2018-01-05", "2020-12-25", freq="W-FRI")
+    returns = pd.DataFrame(
+        {
+            "A": np.log1p(np.linspace(-0.01, 0.02, len(dates))),
+            "B": np.log1p(np.linspace(0.02, -0.005, len(dates))),
+        },
+        index=dates,
+    )
+    spy_dates = dates[dates >= pd.Timestamp("2020-01-01")]
+    spy_returns = pd.Series(np.log1p(0.01), index=spy_dates, name="SPY")
+
+    def legacy(expected_returns, covariance, config):
+        del expected_returns, config
+        return pd.Series(1.0 / len(covariance), index=covariance.index)
+
+    legacy_result = run_walk_forward_backtest(
+        returns,
+        spy_returns,
+        {"Equal": legacy},
+        BacktestConfig(rebalance_years=[2020]),
+    )
+    contextual_result = run_contextual_walk_forward_backtest(
+        returns,
+        spy_returns,
+        {"Equal": adapt_legacy_strategy(legacy)},
+        BacktestConfig(rebalance_years=[2020]),
+    )
+
+    pd.testing.assert_frame_equal(legacy_result.period_returns, contextual_result.period_returns)
+    pd.testing.assert_frame_equal(legacy_result.portfolio_values, contextual_result.portfolio_values)
+    pd.testing.assert_frame_equal(legacy_result.weights, contextual_result.weights)
+    pd.testing.assert_frame_equal(legacy_result.turnover, contextual_result.turnover)
+
+
+def test_contextual_strategy_receives_only_pre_rebalance_training_data():
+    dates = pd.date_range("2018-01-05", "2020-12-25", freq="W-FRI")
+    returns = pd.DataFrame(
+        np.log1p(np.linspace(-0.01, 0.02, len(dates)))[:, None].repeat(2, axis=1),
+        index=dates,
+        columns=["A", "B"],
+    )
+    spy_dates = dates[dates >= pd.Timestamp("2020-01-01")]
+    spy_returns = pd.Series(np.log1p(0.01), index=spy_dates, name="SPY")
+
+    def contextual(context, config):
+        del config
+        assert context.training_returns.index.max() < context.rebalance_date
+        return pd.Series(0.5, index=context.covariance.index)
+
+    run_contextual_walk_forward_backtest(
+        returns,
+        spy_returns,
+        {"Contextual": contextual},
+        BacktestConfig(rebalance_years=[2020]),
+    )
 
 
 def test_run_walk_forward_backtest_rejects_missing_spy_dates():
