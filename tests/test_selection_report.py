@@ -6,6 +6,7 @@ import pandas as pd
 from report_selection_experiment import (
     CANDIDATE_STRATEGIES,
     RunArtifacts,
+    build_all_strategy_summary,
     build_annual_comparison,
     evaluate_promotion_gates,
     generate_diagnostic_graphs,
@@ -80,6 +81,42 @@ def make_gate_artifacts(candidate_return: float, equal_weight_return: float = 0.
         turnover=turnover,
         audit=audit,
         metadata={"asset_count": 2},
+    )
+
+
+def test_all_strategy_summary_combines_existing_and_new_metrics(tmp_path, monkeypatch):
+    selection = make_gate_artifacts(candidate_return=0.08)
+    existing_returns = selection.returns[["Equal Weight", "SPY"]].copy()
+    existing_returns["Existing Strategy"] = 0.06
+    existing_returns.to_csv(tmp_path / "walk_forward_returns.csv")
+    existing_weights = selection.weights.loc[
+        selection.weights.index.get_level_values("Strategy") == "Equal Weight"
+    ].copy()
+    existing_strategy_weights = existing_weights.copy()
+    existing_strategy_weights.index = pd.MultiIndex.from_arrays(
+        [
+            existing_strategy_weights.index.get_level_values("Rebalance Date"),
+            ["Existing Strategy"] * len(existing_strategy_weights),
+        ],
+        names=["Rebalance Date", "Strategy"],
+    )
+    pd.concat([existing_weights, existing_strategy_weights]).to_csv(
+        tmp_path / "walk_forward_weights.csv"
+    )
+    asset_returns = pd.DataFrame(0.01, index=selection.returns.index, columns=["A", "B"])
+    monkeypatch.setattr("report_selection_experiment.load_returns", lambda: asset_returns)
+
+    summary = build_all_strategy_summary(selection, existing_output_dir=tmp_path)
+
+    assert set(summary["Strategy"]) == {
+        "Equal Weight",
+        "Existing Strategy",
+        "Partitioning Selection",
+        "Density Selection",
+        "SPY",
+    }
+    assert {"CAGR", "Volatility", "Sharpe Ratio", "Maximum Drawdown", "Turnover"}.issubset(
+        summary.columns
     )
 
 
