@@ -165,6 +165,8 @@ Persist isolated full-universe and ex-CELH inputs, weekly net returns, target we
 
 Reporting must include:
 
+- annual PAM and HDBSCAN cluster maps using value rank versus trailing-Sharpe rank, market-cap rank as marker size, and selected names highlighted;
+- equity-curve, drawdown, and calendar-year comparisons of PAM and HDBSCAN against SPY, Max Sharpe, Equal Weight, and Maximum Diversification;
 - standard net performance metrics;
 - compounded calendar-year returns and annual excess returns;
 - information ratio versus Equal Weight;

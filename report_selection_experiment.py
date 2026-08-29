@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,6 +23,13 @@ plt.switch_backend("Agg")
 CANDIDATE_STRATEGIES = ("Partitioning Selection", "Density Selection")
 ELIGIBLE_BASELINE = "Eligible Universe Equal Weight"
 BENCHMARK_STRATEGIES = ("Equal Weight", ELIGIBLE_BASELINE, "SPY")
+COMPARISON_STRATEGIES = (
+    *CANDIDATE_STRATEGIES,
+    "SPY",
+    "Max Sharpe",
+    "Equal Weight",
+    "Maximum Diversification",
+)
 
 
 @dataclass(frozen=True)
@@ -260,6 +268,120 @@ def _save_figure(figure: plt.Figure, path: Path) -> None:
     plt.close(figure)
 
 
+def _cluster_output_name(strategy: str) -> str:
+    return f"{strategy.lower().replace(' ', '_')}_clusters.png"
+
+
+def generate_cluster_graphs(artifacts: RunArtifacts, output_dir: Path) -> None:
+    """Plot annual PAM/HDBSCAN clusters and highlight selected securities."""
+    required_columns = {
+        "strategy",
+        "rebalance_date",
+        "ticker",
+        "cluster_label",
+        "selected",
+        "value_rank",
+        "size_rank",
+        "sharpe_rank",
+    }
+    missing_columns = required_columns.difference(artifacts.audit.columns)
+    if missing_columns:
+        raise ValueError(f"Selection audit is missing cluster graph columns: {sorted(missing_columns)}")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for strategy in CANDIDATE_STRATEGIES:
+        strategy_audit = artifacts.audit.loc[artifacts.audit["strategy"] == strategy]
+        dates = sorted(strategy_audit["rebalance_date"].unique())
+        if not dates:
+            raise ValueError(f"Selection audit has no rows for {strategy}")
+        column_count = min(3, len(dates))
+        row_count = math.ceil(len(dates) / column_count)
+        figure, axes = plt.subplots(
+            row_count,
+            column_count,
+            figsize=(5.2 * column_count, 4.5 * row_count),
+            squeeze=False,
+            sharex=True,
+            sharey=True,
+        )
+        for axis, rebalance_date in zip(axes.flat, dates, strict=False):
+            annual_audit = strategy_audit.loc[strategy_audit["rebalance_date"] == rebalance_date]
+            point_sizes = 35.0 + 125.0 * annual_audit["size_rank"].astype(float)
+            axis.scatter(
+                annual_audit["value_rank"],
+                annual_audit["sharpe_rank"],
+                c=annual_audit["cluster_label"],
+                cmap="tab20",
+                s=point_sizes,
+                alpha=0.70,
+                edgecolors="none",
+            )
+            selected = annual_audit.loc[annual_audit["selected"].astype(bool)]
+            axis.scatter(
+                selected["value_rank"],
+                selected["sharpe_rank"],
+                marker="*",
+                s=180,
+                facecolors="none",
+                edgecolors="black",
+                linewidths=1.3,
+                label="Selected",
+            )
+            axis.set_title(pd.Timestamp(rebalance_date).strftime("%Y"))
+            axis.set_xlabel("Value rank")
+            axis.set_ylabel("Trailing Sharpe rank")
+            axis.grid(alpha=0.20)
+        for axis in axes.flat[len(dates) :]:
+            axis.set_visible(False)
+        figure.suptitle(
+            f"{strategy}: Point-in-Time Clusters (* = selected; size = market-cap rank)",
+            fontsize=14,
+        )
+        _save_figure(figure, output_dir / _cluster_output_name(strategy))
+
+
+def generate_benchmark_comparison_graphs(
+    selection_artifacts: RunArtifacts,
+    output_dir: Path,
+    existing_output_dir: Path = PORTFOLIO_OUTPUT_DIR,
+) -> None:
+    """Compare both selectors with SPY and the three requested allocation benchmarks."""
+    existing_returns = pd.read_csv(
+        existing_output_dir / "walk_forward_returns.csv",
+        index_col=0,
+        parse_dates=True,
+    )
+    combined_returns = _combine_strategy_returns(existing_returns, selection_artifacts.returns)
+    missing_strategies = set(COMPARISON_STRATEGIES).difference(combined_returns.columns)
+    if missing_strategies:
+        raise ValueError(f"Comparison returns are missing strategies: {sorted(missing_strategies)}")
+    comparison_returns = combined_returns.loc[:, COMPARISON_STRATEGIES]
+    comparison_values = (1.0 + comparison_returns).cumprod()
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    figure, axis = plt.subplots(figsize=(12, 7))
+    comparison_values.plot(ax=axis)
+    axis.set(title="Stock Selectors vs Requested Benchmarks", ylabel="Growth of $1", xlabel="Date")
+    axis.grid(alpha=0.25)
+    _save_figure(figure, output_dir / "strategy_benchmark_equity_curves.png")
+
+    drawdowns = comparison_values.div(comparison_values.cummax()).sub(1.0)
+    figure, axis = plt.subplots(figsize=(12, 7))
+    drawdowns.plot(ax=axis)
+    axis.set(title="Selector and Benchmark Drawdowns", ylabel="Drawdown", xlabel="Date")
+    axis.yaxis.set_major_formatter(plt.FuncFormatter(lambda value, _: f"{value:.0%}"))
+    axis.grid(alpha=0.25)
+    _save_figure(figure, output_dir / "strategy_benchmark_drawdowns.png")
+
+    annual_returns = (1.0 + comparison_returns).groupby(comparison_returns.index.year).prod() - 1.0
+    figure, axis = plt.subplots(figsize=(13, 7))
+    annual_returns.plot(kind="bar", ax=axis)
+    axis.set(title="Calendar-Year Selector and Benchmark Returns", ylabel="Return", xlabel="Year")
+    axis.yaxis.set_major_formatter(plt.FuncFormatter(lambda value, _: f"{value:.0%}"))
+    axis.grid(axis="y", alpha=0.25)
+    _save_figure(figure, output_dir / "strategy_benchmark_annual_returns.png")
+
+
 def generate_diagnostic_graphs(
     artifacts: RunArtifacts,
     annual: pd.DataFrame,
@@ -298,6 +420,7 @@ def generate_diagnostic_graphs(
     axis.set(title="Selection Frequency by Ticker", ylabel="Rebalances Selected", xlabel="Ticker")
     axis.grid(axis="y", alpha=0.25)
     _save_figure(figure, output_dir / "selection_frequency.png")
+    generate_cluster_graphs(artifacts, output_dir)
 
 
 def _markdown_table(frame: pd.DataFrame, include_index: bool = False) -> str:
@@ -367,6 +490,7 @@ def generate_report(
     decisions = evaluate_promotion_gates(full, ex_celh, quality_checks_passed)
     all_strategies = build_all_strategy_summary(full)
     generate_diagnostic_graphs(full, annual, input_dir)
+    generate_benchmark_comparison_graphs(full, input_dir)
 
     csv_outputs: dict[Path, tuple[pd.DataFrame | pd.Series, dict[str, object]]] = {
         input_dir / "comparison_summary.csv": (summary, {"index": False}),

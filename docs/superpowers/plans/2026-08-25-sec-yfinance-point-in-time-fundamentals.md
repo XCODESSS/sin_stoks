@@ -1769,7 +1769,9 @@ Expected output includes:
 
 - `all_strategy_summary.csv` containing all seven existing strategies, PAM, HDBSCAN, and SPY;
 - `comparison_summary.csv`, `annual_excess_returns.csv`, `decision.json`, and `experiment_report.md`;
-- `selection_equity_curves.png`, `selection_drawdowns.png`, `annual_strategy_returns.png`, and `selection_frequency.png`.
+- `selection_equity_curves.png`, `selection_drawdowns.png`, `annual_strategy_returns.png`, and `selection_frequency.png`;
+- `partitioning_selection_clusters.png` and `density_selection_clusters.png`, with annual cluster labels and selected stocks highlighted; and
+- `strategy_benchmark_equity_curves.png`, `strategy_benchmark_drawdowns.png`, and `strategy_benchmark_annual_returns.png`, comparing PAM and HDBSCAN with SPY, Max Sharpe, Equal Weight, and Maximum Diversification.
 
 - [ ] **Step 5: Verify reproducibility**
 
@@ -1829,7 +1831,7 @@ Expected: only planned code, tests, source specifications, and permitted run-has
 
 Show every row from `all_strategy_summary.csv` with final value, total return, CAGR, volatility, Sharpe, Sortino, maximum drawdown, Calmar, beta, alpha, tracking error, information ratio, and recurring turnover. Label PAM and HDBSCAN as historical walk-forward results and include full/ex-CELH gate outcomes.
 
-Link or identify all four generated graph paths and explain selection concentration, annual consistency, drawdowns, and turnover without claiming statistical significance from six years.
+Link or identify all generated graph paths, including both annual cluster maps and the three requested benchmark-comparison figures. Explain cluster membership, selected representatives, concentration, annual consistency, drawdowns, and turnover without claiming statistical significance from six years.
 
 - [ ] **Step 3: Apply the manual-completion decision rule**
 

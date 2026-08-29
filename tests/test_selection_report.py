@@ -10,6 +10,7 @@ from report_selection_experiment import (
     build_all_strategy_summary,
     build_annual_comparison,
     evaluate_promotion_gates,
+    generate_benchmark_comparison_graphs,
     generate_diagnostic_graphs,
 )
 
@@ -70,6 +71,10 @@ def make_gate_artifacts(candidate_return: float, equal_weight_return: float = 0.
                 "strategy": strategy,
                 "ticker": ticker,
                 "selected": True,
+                "cluster_label": 0 if ticker == "A" else 1,
+                "value_rank": 0.25 if ticker == "A" else 0.75,
+                "size_rank": 0.40 if ticker == "A" else 0.80,
+                "sharpe_rank": 0.30 if ticker == "A" else 0.70,
             }
             for date in dates
             for strategy in CANDIDATE_STRATEGIES
@@ -129,6 +134,25 @@ def test_diagnostic_graphs_are_written(tmp_path):
     assert (tmp_path / "selection_drawdowns.png").exists()
     assert (tmp_path / "annual_strategy_returns.png").exists()
     assert (tmp_path / "selection_frequency.png").exists()
+    assert (tmp_path / "partitioning_selection_clusters.png").exists()
+    assert (tmp_path / "density_selection_clusters.png").exists()
+
+
+def test_requested_benchmark_comparison_graphs_are_written(tmp_path):
+    artifacts = make_gate_artifacts(candidate_return=0.08)
+    existing_output = tmp_path / "existing"
+    graph_output = tmp_path / "graphs"
+    existing_output.mkdir()
+    existing_returns = artifacts.returns[["Equal Weight", "SPY"]].copy()
+    existing_returns["Max Sharpe"] = 0.07
+    existing_returns["Maximum Diversification"] = 0.06
+    existing_returns.to_csv(existing_output / "walk_forward_returns.csv")
+
+    generate_benchmark_comparison_graphs(artifacts, graph_output, existing_output)
+
+    assert (graph_output / "strategy_benchmark_equity_curves.png").exists()
+    assert (graph_output / "strategy_benchmark_drawdowns.png").exists()
+    assert (graph_output / "strategy_benchmark_annual_returns.png").exists()
 
 
 def test_candidate_fails_when_ex_celh_advantage_reverses(monkeypatch):
