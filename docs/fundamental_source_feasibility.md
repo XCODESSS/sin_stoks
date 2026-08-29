@@ -67,3 +67,11 @@ Repeated automated failures were:
 A user-supplied FMP key was tested transiently and was not written to source code, artifacts, or Git. Authentication succeeded on the profile endpoint, but the current subscription returned HTTP 402 for historical statements or market capitalization for BF-B, BUD, BTI, EA, STZ, QSR, PRNDY, TCEHY, NTDOY, CCOEY, and UBSFY. META and SNAP exposed only 64 recent market-cap observations (2026-05-29 through 2026-08-28), not the required 2019-2024 history; their historical income statements were also restricted. Legacy v3 endpoints returned HTTP 403.
 
 Therefore, the current FMP subscription cannot satisfy the point-in-time contract. A plan that unlocks historical statements and historical market capitalization, including the international/OTC symbols, would need a new coverage pilot before use.
+
+## SimFin access pilot
+
+A user-supplied SimFin key was tested transiently and was not written to source code, artifacts, or Git. Authentication succeeded. The price endpoint returned unadjusted closes and `Common Shares Outstanding` from 2019-08-29 through 2025-01-02 for BUD, EA, META, SNAP, STZ, QSR, and TCEHY; BTI had prices throughout but shares only from late 2021. BF-B/BF.B, PRNDY, NTDOY, CCOEY, and UBSFY had no company records.
+
+Income statements with publication dates were available for EA, META, SNAP, STZ, and QSR, but every returned row was marked `Restated`; these values are not accepted as point-in-time earnings without proof that the published-date/value pairing preserves the originally reported observation. BUD and BTI statement coverage was annual and insufficient in early rebalances.
+
+SimFin is therefore promising as a **market-reference fallback**, especially for EA's missing Yahoo prices and STZ's historical shares, but it cannot replace SEC filing chronology wholesale. A separately frozen hybrid-source amendment could retain SEC earnings, add explicit SEC share-tag fallbacks for META/SNAP, use documented annual-share staleness rules for foreign filers, and use SimFin only where its price/share history is auditable.
