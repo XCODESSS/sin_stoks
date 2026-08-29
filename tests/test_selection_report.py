@@ -5,6 +5,7 @@ import pandas as pd
 
 from report_selection_experiment import (
     CANDIDATE_STRATEGIES,
+    ELIGIBLE_BASELINE,
     RunArtifacts,
     build_all_strategy_summary,
     build_annual_comparison,
@@ -33,6 +34,7 @@ def make_gate_artifacts(candidate_return: float, equal_weight_return: float = 0.
     returns = pd.DataFrame(
         {
             "Equal Weight": equal_weight_return,
+            ELIGIBLE_BASELINE: equal_weight_return,
             "Partitioning Selection": candidate_return,
             "Density Selection": candidate_return - 0.005,
             "SPY": 0.04,
@@ -44,7 +46,7 @@ def make_gate_artifacts(candidate_return: float, equal_weight_return: float = 0.
         [pd.DataFrame(10_000.0, index=[pd.Timestamp("2020-01-01")], columns=returns.columns), values]
     )
     weight_index = pd.MultiIndex.from_product(
-        [dates, ["Equal Weight", *CANDIDATE_STRATEGIES]],
+        [dates, ["Equal Weight", ELIGIBLE_BASELINE, *CANDIDATE_STRATEGIES]],
         names=["Rebalance Date", "Strategy"],
     )
     weights = pd.DataFrame(0.5, index=weight_index, columns=["A", "B"])
@@ -56,7 +58,7 @@ def make_gate_artifacts(candidate_return: float, equal_weight_return: float = 0.
                 "Turnover": 1.0 if position == 0 else 0.10,
                 "Cost": 0.001 if position == 0 else 0.0001,
             }
-            for strategy in ["Equal Weight", *CANDIDATE_STRATEGIES]
+            for strategy in ["Equal Weight", ELIGIBLE_BASELINE, *CANDIDATE_STRATEGIES]
             for position, date in enumerate(dates)
         ]
     )
@@ -100,9 +102,7 @@ def test_all_strategy_summary_combines_existing_and_new_metrics(tmp_path, monkey
         ],
         names=["Rebalance Date", "Strategy"],
     )
-    pd.concat([existing_weights, existing_strategy_weights]).to_csv(
-        tmp_path / "walk_forward_weights.csv"
-    )
+    pd.concat([existing_weights, existing_strategy_weights]).to_csv(tmp_path / "walk_forward_weights.csv")
     asset_returns = pd.DataFrame(0.01, index=selection.returns.index, columns=["A", "B"])
     monkeypatch.setattr("report_selection_experiment.load_returns", lambda: asset_returns)
 
@@ -111,13 +111,12 @@ def test_all_strategy_summary_combines_existing_and_new_metrics(tmp_path, monkey
     assert set(summary["Strategy"]) == {
         "Equal Weight",
         "Existing Strategy",
+        ELIGIBLE_BASELINE,
         "Partitioning Selection",
         "Density Selection",
         "SPY",
     }
-    assert {"CAGR", "Volatility", "Sharpe Ratio", "Maximum Drawdown", "Turnover"}.issubset(
-        summary.columns
-    )
+    assert {"CAGR", "Volatility", "Sharpe Ratio", "Maximum Drawdown", "Turnover"}.issubset(summary.columns)
 
 
 def test_diagnostic_graphs_are_written(tmp_path):
@@ -142,5 +141,5 @@ def test_candidate_fails_when_ex_celh_advantage_reverses(monkeypatch):
     decisions = evaluate_promotion_gates(full, ex_celh, quality_checks_passed=True)
 
     partitioning = decisions["Partitioning Selection"]
-    assert partitioning["gates"]["ex_celh_cagr_exceeds_equal_weight"] is False
+    assert partitioning["gates"]["ex_celh_cagr_exceeds_full_and_eligible"] is False
     assert partitioning["research_promising"] is False

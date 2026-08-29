@@ -8,6 +8,7 @@ from backtest_engine import RebalanceContext
 from portfolio_strategies import StrategyConfig
 from selection_features import SelectionFeatures
 from selection_strategies import (
+    EligibleUniverseEqualWeight,
     SelectionConfig,
     SelectionStrategy,
     pam_labels,
@@ -43,9 +44,7 @@ def make_asset_features(n_assets: int = 30) -> SelectionFeatures:
         },
         index=tickers,
     )
-    base_score = (0.5 * features["value_rank"] + 0.5 * features["sharpe_rank"]).rename(
-        "base_score"
-    )
+    base_score = (0.5 * features["value_rank"] + 0.5 * features["sharpe_rank"]).rename("base_score")
     return SelectionFeatures(
         features=features,
         base_score=base_score,
@@ -132,9 +131,7 @@ def make_density_features() -> SelectionFeatures:
         },
         index=tickers,
     )
-    base_score = (0.5 * features["value_rank"] + 0.5 * features["sharpe_rank"]).rename(
-        "base_score"
-    )
+    base_score = (0.5 * features["value_rank"] + 0.5 * features["sharpe_rank"]).rename("base_score")
     correlation = 1.0 - 2.0 * distance_values**2
     np.fill_diagonal(correlation, 1.0)
     return SelectionFeatures(
@@ -224,6 +221,21 @@ def test_selection_strategy_returns_full_universe_capped_weights_and_audit():
     assert set(audit["strategy"]) == {"Partitioning Selection"}
     assert audit["selected"].sum() == 12
     assert (audit["available_date"] < audit["rebalance_date"]).all()
+
+
+def test_eligible_universe_baseline_uses_exact_snapshot():
+    context = make_rebalance_context()
+    fundamentals = make_point_in_time_fundamentals(n_assets=24)
+
+    weights = EligibleUniverseEqualWeight(fundamentals)(
+        context,
+        StrategyConfig(max_weight=0.25, risk_free_rate=0.04),
+    )
+
+    assert np.isclose(weights.sum(), 1.0)
+    assert (weights > 0).sum() == 24
+    assert np.allclose(weights[weights > 0], 1.0 / 24.0)
+    assert (weights.loc[[f"T{position:02d}" for position in range(24, 30)]] == 0.0).all()
 
 
 def test_future_fundamental_record_does_not_change_earlier_weights():

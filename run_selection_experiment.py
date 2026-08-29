@@ -37,7 +37,12 @@ from data_pipeline import write_csv_outputs_atomically
 from fundamental_data import load_fundamentals
 from portfolio_strategies import equal_weight
 from run_backtest import load_returns, load_spy_returns
-from selection_strategies import SelectionStrategy, select_density, select_partitioned
+from selection_strategies import (
+    EligibleUniverseEqualWeight,
+    SelectionStrategy,
+    select_density,
+    select_partitioned,
+)
 
 
 def _sha256(path: Path) -> str:
@@ -147,6 +152,7 @@ def run_experiment(
     )
     strategies = {
         "Equal Weight": adapt_legacy_strategy(equal_weight),
+        "Eligible Universe Equal Weight": EligibleUniverseEqualWeight(fundamentals),
         "Partitioning Selection": partitioning,
         "Density Selection": density,
     }

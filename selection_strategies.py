@@ -48,6 +48,29 @@ class SelectionResult:
 SelectorCallable = Callable[[SelectionFeatures, SelectionConfig], SelectionResult]
 
 
+class EligibleUniverseEqualWeight:
+    """Equal-weight the exact point-in-time fundamental-eligible universe."""
+
+    def __init__(self, fundamentals: pd.DataFrame) -> None:
+        self._fundamentals = fundamentals.copy()
+
+    def __call__(self, context: RebalanceContext, config: StrategyConfig) -> pd.Series:
+        snapshot = fundamentals_as_of(
+            self._fundamentals,
+            context.rebalance_date,
+            context.covariance.index,
+        )
+        eligible_tickers = list(snapshot.index)
+        eligible_weights = equal_weight(
+            context.expected_returns.loc[eligible_tickers],
+            context.covariance.loc[eligible_tickers, eligible_tickers],
+            config,
+        )
+        weights = eligible_weights.reindex(context.covariance.index, fill_value=0.0)
+        validate_projected_weights(weights.to_numpy(), config.max_weight, "Eligible Universe Equal Weight")
+        return weights
+
+
 class SelectionStrategy:
     """Contextual equal-weight selector with point-in-time audit records."""
 
@@ -242,8 +265,7 @@ def _fill_diversified(
     while len(selected) < config.target_count and remaining:
         candidate_scores = {
             ticker: float(inputs.base_score.loc[ticker])
-            - config.diversification_penalty
-            * float(inputs.correlation.loc[ticker, selected].mean())
+            - config.diversification_penalty * float(inputs.correlation.loc[ticker, selected].mean())
             for ticker in remaining
         }
         best_score = max(candidate_scores.values())
@@ -304,6 +326,7 @@ def select_density(
         cluster_selection_method="eom",
         allow_single_cluster=True,
         store_centers=None,
+        copy=True,
     )
     labels = pd.Series(model.fit_predict(distance.to_numpy()), index=distance.index, name="cluster")
     adjusted_scores = inputs.base_score.copy().rename("adjusted_score")

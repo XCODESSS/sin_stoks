@@ -20,7 +20,8 @@ from run_backtest import load_returns
 plt.switch_backend("Agg")
 
 CANDIDATE_STRATEGIES = ("Partitioning Selection", "Density Selection")
-BENCHMARK_STRATEGIES = ("Equal Weight", "SPY")
+ELIGIBLE_BASELINE = "Eligible Universe Equal Weight"
+BENCHMARK_STRATEGIES = ("Equal Weight", ELIGIBLE_BASELINE, "SPY")
 
 
 @dataclass(frozen=True)
@@ -61,6 +62,8 @@ def build_annual_comparison(returns: pd.DataFrame) -> pd.DataFrame:
             continue
         if "Equal Weight" in annual:
             annual[f"{strategy} vs Equal Weight"] = annual[strategy] - annual["Equal Weight"]
+        if ELIGIBLE_BASELINE in annual:
+            annual[f"{strategy} vs {ELIGIBLE_BASELINE}"] = annual[strategy] - annual[ELIGIBLE_BASELINE]
         if "SPY" in annual:
             annual[f"{strategy} vs SPY"] = annual[strategy] - annual["SPY"]
     annual.index.name = "Year"
@@ -79,9 +82,7 @@ def _summary_with_turnover(artifacts: RunArtifacts, asset_returns: pd.DataFrame)
         .groupby("Strategy", sort=False)["Turnover"]
         .apply(lambda values: float(values.iloc[1:].mean()) if len(values) > 1 else 0.0)
     )
-    summary["Turnover"] = summary["Strategy"].map(recurring_turnover).fillna(
-        summary["Turnover"]
-    )
+    summary["Turnover"] = summary["Strategy"].map(recurring_turnover).fillna(summary["Turnover"])
     return summary
 
 
@@ -126,9 +127,9 @@ def _coverage_by_rebalance(artifacts: RunArtifacts) -> pd.DataFrame:
 
 
 def _recurring_turnover(artifacts: RunArtifacts, strategy: str) -> float:
-    values = artifacts.turnover.loc[
-        artifacts.turnover["Strategy"] == strategy
-    ].sort_values("Rebalance Date")["Turnover"]
+    values = artifacts.turnover.loc[artifacts.turnover["Strategy"] == strategy].sort_values("Rebalance Date")[
+        "Turnover"
+    ]
     return float(values.iloc[1:].mean()) if len(values) > 1 else 0.0
 
 
@@ -151,27 +152,30 @@ def evaluate_promotion_gates(
     for strategy in CANDIDATE_STRATEGIES:
         candidate_cagr = float(full_summary.loc[strategy, "CAGR"])
         equal_weight_cagr = float(full_summary.loc["Equal Weight", "CAGR"])
+        eligible_cagr = float(full_summary.loc[ELIGIBLE_BASELINE, "CAGR"])
         spy_cagr = float(full_summary.loc["SPY", "CAGR"])
-        annual_wins = int((annual[strategy] > annual["Equal Weight"]).sum())
+        annual_wins = int((annual[strategy] > annual[ELIGIBLE_BASELINE]).sum())
         information_ratio = calculate_information_ratio(
-            full.returns[strategy], full.returns["Equal Weight"]
+            full.returns[strategy], full.returns[ELIGIBLE_BASELINE]
         )
         candidate_drawdown = float(full_summary.loc[strategy, "Maximum Drawdown"])
-        equal_weight_drawdown = float(full_summary.loc["Equal Weight", "Maximum Drawdown"])
+        eligible_drawdown = float(full_summary.loc[ELIGIBLE_BASELINE, "Maximum Drawdown"])
         turnover = _recurring_turnover(full, strategy)
         ex_candidate_cagr = float(ex_summary.loc[strategy, "CAGR"])
         ex_equal_weight_cagr = float(ex_summary.loc["Equal Weight", "CAGR"])
+        ex_eligible_cagr = float(ex_summary.loc[ELIGIBLE_BASELINE, "CAGR"])
         strategy_coverage = coverage.loc[coverage["strategy"] == strategy, "fundamental_coverage"]
         minimum_coverage = float(strategy_coverage.min())
 
         gates = {
-            "cagr_exceeds_equal_weight_and_spy": candidate_cagr > max(equal_weight_cagr, spy_cagr),
-            "beats_equal_weight_in_four_of_six_years": annual_wins >= 4,
-            "positive_information_ratio_vs_equal_weight": information_ratio > 0.0,
-            "drawdown_within_three_percentage_points": candidate_drawdown
-            >= equal_weight_drawdown - 0.03,
+            "cagr_exceeds_full_eligible_and_spy": candidate_cagr
+            > max(equal_weight_cagr, eligible_cagr, spy_cagr),
+            "beats_eligible_baseline_in_four_of_six_years": annual_wins >= 4,
+            "positive_information_ratio_vs_eligible_baseline": information_ratio > 0.0,
+            "drawdown_within_three_percentage_points": candidate_drawdown >= eligible_drawdown - 0.03,
             "recurring_turnover_at_most_sixty_percent": turnover <= 0.60,
-            "ex_celh_cagr_exceeds_equal_weight": ex_candidate_cagr > ex_equal_weight_cagr,
+            "ex_celh_cagr_exceeds_full_and_eligible": ex_candidate_cagr
+            > max(ex_equal_weight_cagr, ex_eligible_cagr),
             "coverage_at_least_eighty_percent": minimum_coverage >= SELECTION_MIN_COVERAGE,
             "quality_checks_passed": quality_checks_passed,
         }
@@ -182,21 +186,25 @@ def evaluate_promotion_gates(
             "supporting_values": {
                 "candidate_cagr": candidate_cagr,
                 "equal_weight_cagr": equal_weight_cagr,
+                "eligible_universe_equal_weight_cagr": eligible_cagr,
                 "spy_cagr": spy_cagr,
-                "annual_wins_vs_equal_weight": annual_wins,
-                "information_ratio_vs_equal_weight": information_ratio,
+                "annual_wins_vs_eligible_baseline": annual_wins,
+                "information_ratio_vs_eligible_baseline": information_ratio,
                 "candidate_max_drawdown": candidate_drawdown,
-                "equal_weight_max_drawdown": equal_weight_drawdown,
+                "eligible_baseline_max_drawdown": eligible_drawdown,
                 "average_recurring_turnover": turnover,
                 "ex_celh_candidate_cagr": ex_candidate_cagr,
                 "ex_celh_equal_weight_cagr": ex_equal_weight_cagr,
+                "ex_celh_eligible_universe_equal_weight_cagr": ex_eligible_cagr,
                 "minimum_fundamental_coverage": minimum_coverage,
             },
         }
     return decisions
 
 
-def _combine_strategy_returns(existing_returns: pd.DataFrame, selection_returns: pd.DataFrame) -> pd.DataFrame:
+def _combine_strategy_returns(
+    existing_returns: pd.DataFrame, selection_returns: pd.DataFrame
+) -> pd.DataFrame:
     if not existing_returns.index.equals(selection_returns.index):
         raise ValueError("Existing and selection strategy return dates must match exactly")
     shared = [column for column in ("Equal Weight", "SPY") if column in existing_returns]
@@ -226,9 +234,7 @@ def build_all_strategy_summary(
             ]
         )
 
-    existing_weights = pd.read_csv(
-        existing_output_dir / "walk_forward_weights.csv", index_col=[0, 1]
-    )
+    existing_weights = pd.read_csv(existing_output_dir / "walk_forward_weights.csv", index_col=[0, 1])
     existing_weights.index = pd.MultiIndex.from_arrays(
         [
             pd.to_datetime(existing_weights.index.get_level_values(0)),
@@ -237,7 +243,7 @@ def build_all_strategy_summary(
         names=["Rebalance Date", "Strategy"],
     )
     new_weight_rows = selection.weights.loc[
-        selection.weights.index.get_level_values("Strategy").isin(CANDIDATE_STRATEGIES)
+        selection.weights.index.get_level_values("Strategy").isin((*CANDIDATE_STRATEGIES, ELIGIBLE_BASELINE))
     ]
     combined_weights = pd.concat([existing_weights, new_weight_rows]).fillna(0.0)
     return build_summary_table(
@@ -320,8 +326,7 @@ def _build_markdown_report(
     annual: pd.DataFrame,
 ) -> str:
     outcomes = ", ".join(
-        f"{strategy}: {decision['classification']}"
-        for strategy, decision in decisions.items()
+        f"{strategy}: {decision['classification']}" for strategy, decision in decisions.items()
     )
     return "\n".join(
         [

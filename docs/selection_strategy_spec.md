@@ -15,6 +15,10 @@ Each selector chooses exactly 12 of the existing 30 equities and assigns equal w
 
 Changing any frozen parameter, formula, target count, gate, or robustness rule requires a new dated plan. Results from a changed specification are exploratory and cannot be presented as preregistered results.
 
+## Pre-Run Source Amendment
+
+The dated SEC+yfinance source plan adds a fair `Eligible Universe Equal Weight` baseline because automated point-in-time coverage may exclude foreign or OTC names. It also requires structured SEC/Yahoo provenance, explicit share-class reconciliation, unadjusted prices for market-cap reconstruction, and an explicitly supplied SEC User-Agent. This amendment was frozen before any historical selection run.
+
 ## Research Boundaries
 
 - Run implementation in `D:\sin_stoks-strategy-lab` on `codex/partition-density-strategies`, based on committed `main`.
@@ -29,7 +33,7 @@ Changing any frozen parameter, formula, target count, gate, or robustness rule r
 
 ## Point-in-Time Fundamental Data Contract
 
-The runtime input is `data/fundamentals_point_in_time.csv`, with these required columns:
+The runtime input is `data/fundamentals_point_in_time.csv`, with core columns:
 
 - `ticker`
 - `observation_date`
@@ -38,6 +42,8 @@ The runtime input is `data/fundamentals_point_in_time.csv`, with these required 
 - `market_cap`
 - `earnings_positive`
 - `source`
+
+Free-source records must also preserve structured provenance for the rebalance date, CIK, SEC filing/accession and fact periods, Yahoo price symbol/date/currency, historical FX rates, filed shares, share reconciliation, TTM earnings, and calculation method.
 
 Only records with `available_date < rebalance_date` are eligible. An observation date or fiscal-period date alone is not evidence that information was available. Current P/E or market-cap values must not be substituted for historical values.
 
@@ -143,6 +149,7 @@ PAM and HDBSCAN selections receive equal weights. The primary comparison include
 
 - PAM-selected Equal Weight;
 - HDBSCAN-selected Equal Weight;
+- Eligible Universe Equal Weight, rebuilt from the exact valid fundamental snapshot at each rebalance;
 - full-universe Equal Weight; and
 - SPY.
 
@@ -174,12 +181,12 @@ Do not calculate or imply reliable p-values from six annual observations.
 
 Evaluate PAM and HDBSCAN independently. A selector is **research-promising** only if every condition passes:
 
-1. Full-universe net CAGR exceeds both full-universe Equal Weight and SPY.
-2. Calendar-year return exceeds Equal Weight in at least four of six years.
-3. Information ratio versus Equal Weight is positive.
-4. Maximum drawdown is no more than 3 percentage points worse than Equal Weight.
+1. Full-universe net CAGR exceeds full-universe Equal Weight, Eligible Universe Equal Weight, and SPY.
+2. Calendar-year return exceeds Eligible Universe Equal Weight in at least four of six years.
+3. Information ratio versus Eligible Universe Equal Weight is positive.
+4. Maximum drawdown is no more than 3 percentage points worse than Eligible Universe Equal Weight.
 5. Average recurring one-way turnover is at most 60%.
-6. Ex-CELH net CAGR exceeds corresponding ex-CELH Equal Weight CAGR.
+6. Ex-CELH net CAGR exceeds both corresponding ex-CELH full-universe and eligible-universe Equal Weight CAGRs.
 7. Fundamental coverage is at least 80% at every rebalance.
 8. All integrity, test, lint, formatting, and diff checks pass.
 

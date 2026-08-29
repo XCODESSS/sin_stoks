@@ -14,9 +14,7 @@ def make_experiment_inputs():
     phases = np.linspace(0.0, 2.0 * np.pi, len(tickers), endpoint=False)
     simple_returns = np.column_stack(
         [
-            0.002
-            + 0.012 * np.sin(np.linspace(0.0, 20.0, len(dates)) + phase)
-            + 0.0001 * position
+            0.002 + 0.012 * np.sin(np.linspace(0.0, 20.0, len(dates)) + phase) + 0.0001 * position
             for position, phase in enumerate(phases)
         ]
     )
@@ -64,6 +62,7 @@ def test_experiment_writes_only_isolated_outputs(tmp_path, monkeypatch):
 
     assert set(result.period_returns.columns) == {
         "Equal Weight",
+        "Eligible Universe Equal Weight",
         "Partitioning Selection",
         "Density Selection",
         "SPY",
