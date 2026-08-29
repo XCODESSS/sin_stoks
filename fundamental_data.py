@@ -19,6 +19,21 @@ REQUIRED_COLUMNS = {
     "earnings_positive",
     "source",
 }
+PROVENANCE_DATE_COLUMNS = {
+    "rebalance_date",
+    "price_date",
+    "earnings_start",
+    "earnings_end",
+    "earnings_available_date",
+    "shares_date",
+    "shares_available_date",
+}
+PROVENANCE_POSITIVE_COLUMNS = {
+    "cik",
+    "spot_fx_to_usd",
+    "shares_component_count",
+    "filed_shares",
+}
 
 
 def _parse_earnings_positive(values: pd.Series) -> pd.Series:
@@ -55,6 +70,26 @@ def _validate_fundamentals(fundamentals: pd.DataFrame) -> None:
     if not np.isfinite(non_missing_pe).all():
         raise ValueError("trailing_pe must be finite when present")
 
+    if (
+        "rebalance_date" in fundamentals
+        and (fundamentals["available_date"] >= fundamentals["rebalance_date"]).any()
+    ):
+        raise ValueError("available_date must be strictly before rebalance_date")
+
+    for column in ("price_date", "earnings_available_date", "shares_available_date"):
+        if column in fundamentals and (fundamentals[column] > fundamentals["available_date"]).any():
+            raise ValueError(f"{column} must not be after available_date")
+
+    for column in PROVENANCE_POSITIVE_COLUMNS.intersection(fundamentals.columns):
+        values = fundamentals[column].to_numpy(dtype=float)
+        if not np.isfinite(values).all() or (values <= 0).any():
+            raise ValueError(f"{column} must be finite and positive")
+
+    if "trailing_earnings_usd" in fundamentals:
+        values = fundamentals["trailing_earnings_usd"].to_numpy(dtype=float)
+        if not np.isfinite(values).all():
+            raise ValueError("trailing_earnings_usd must be finite")
+
 
 def load_fundamentals(path: Path) -> pd.DataFrame:
     """Load and validate point-in-time fundamental observations."""
@@ -66,23 +101,25 @@ def load_fundamentals(path: Path) -> pd.DataFrame:
     if missing_columns:
         raise ValueError(f"Missing required fundamental columns: {sorted(missing_columns)}")
 
-    fundamentals = fundamentals.loc[:, sorted(REQUIRED_COLUMNS)].copy()
+    fundamentals = fundamentals.copy()
     fundamentals["ticker"] = fundamentals["ticker"].astype("string").str.strip().str.upper()
     if fundamentals["ticker"].isna().any() or fundamentals["ticker"].eq("").any():
         raise ValueError("ticker must not be blank")
 
     fundamentals["source"] = fundamentals["source"].astype("string").str.strip()
-    fundamentals["observation_date"] = pd.to_datetime(
-        fundamentals["observation_date"], errors="raise"
-    )
-    fundamentals["available_date"] = pd.to_datetime(
-        fundamentals["available_date"], errors="raise"
-    )
+    fundamentals["observation_date"] = pd.to_datetime(fundamentals["observation_date"], errors="raise")
+    fundamentals["available_date"] = pd.to_datetime(fundamentals["available_date"], errors="raise")
+    for column in PROVENANCE_DATE_COLUMNS.intersection(fundamentals.columns):
+        fundamentals[column] = pd.to_datetime(fundamentals[column], errors="raise")
     fundamentals["market_cap"] = pd.to_numeric(fundamentals["market_cap"], errors="raise")
     fundamentals["trailing_pe"] = pd.to_numeric(fundamentals["trailing_pe"], errors="raise")
-    fundamentals["earnings_positive"] = _parse_earnings_positive(
-        fundamentals["earnings_positive"]
-    )
+    for column in PROVENANCE_POSITIVE_COLUMNS.intersection(fundamentals.columns):
+        fundamentals[column] = pd.to_numeric(fundamentals[column], errors="raise")
+    if "trailing_earnings_usd" in fundamentals:
+        fundamentals["trailing_earnings_usd"] = pd.to_numeric(
+            fundamentals["trailing_earnings_usd"], errors="raise"
+        )
+    fundamentals["earnings_positive"] = _parse_earnings_positive(fundamentals["earnings_positive"])
 
     _validate_fundamentals(fundamentals)
     return fundamentals.sort_values(["ticker", "available_date"]).reset_index(drop=True)

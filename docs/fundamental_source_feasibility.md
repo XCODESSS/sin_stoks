@@ -32,9 +32,8 @@ Before a historical run, the approved input or extraction procedure must provide
 
 ## Current decision
 
-The implementation and synthetic validation may proceed, but the historical experiment is **data-infeasible pending explicit source approval and access**. The preferred next step is either:
+The user approved an automated **SEC EDGAR Company Facts + yfinance unadjusted primary-listing price/FX coverage pilot**. The implementation now reconstructs TTM earnings and reconciled filed shares using only facts filed before each rebalance, retains structured provenance, and compares selectors with an eligible-universe baseline to expose source-coverage bias.
 
-- approve a ticker-coverage pilot using licensed Sharadar SF1 + SEP access; or
-- provide an approved point-in-time export from FactSet, Compustat/Capital IQ, or another institutional source matching `data/fundamentals_point_in_time.csv`.
+The live source probe has not run because SEC fair-access requests require an explicitly supplied contact-bearing `SEC_USER_AGENT`; the implementation never derives or transmits the Git email automatically. Historical selector metrics remain `N/A` until the source probe proves at least 24 of 30 eligible names at every rebalance and the user separately approves the backtest command.
 
-Until then, new-strategy historical metrics must remain `N/A`; substituting current ratios or revised statements would invalidate the preregistered experiment.
+If the automated pilot fails coverage or share/currency reconciliation, the experiment remains data-infeasible. Current values, revised future filings, ambiguous share aggregation, and silent manual fills remain prohibited.

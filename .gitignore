@@ -25,6 +25,11 @@ outputs/report/weekly_project_report_*.md
 outputs/report/dashboard.html
 AGENT.md
 
+# Point-in-time source caches and locally generated experiment inputs
+/data/source_cache/
+/data/fundamentals_point_in_time.csv
+/outputs/selection_experiment/
+
 # Temporary & Log files
 *.tmp
 *.log
