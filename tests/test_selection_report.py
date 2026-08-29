@@ -12,6 +12,7 @@ from report_selection_experiment import (
     evaluate_promotion_gates,
     generate_benchmark_comparison_graphs,
     generate_diagnostic_graphs,
+    generate_ex_celh_sensitivity_graph,
 )
 
 
@@ -153,6 +154,15 @@ def test_requested_benchmark_comparison_graphs_are_written(tmp_path):
     assert (graph_output / "strategy_benchmark_equity_curves.png").exists()
     assert (graph_output / "strategy_benchmark_drawdowns.png").exists()
     assert (graph_output / "strategy_benchmark_annual_returns.png").exists()
+
+
+def test_ex_celh_sensitivity_graph_is_written(tmp_path):
+    full = make_gate_artifacts(candidate_return=0.08)
+    ex_celh = make_gate_artifacts(candidate_return=0.02)
+
+    generate_ex_celh_sensitivity_graph(full, ex_celh, tmp_path)
+
+    assert (tmp_path / "ex_celh_sensitivity.png").exists()
 
 
 def test_candidate_fails_when_ex_celh_advantage_reverses(monkeypatch):

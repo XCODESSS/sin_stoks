@@ -14,7 +14,7 @@ import pandas as pd
 
 from config import PORTFOLIO_OUTPUT_DIR, SELECTION_MIN_COVERAGE, SELECTION_OUTPUT_DIR, STARTING_VALUE
 from data_pipeline import write_csv_outputs_atomically
-from reporting.metrics import calculate_information_ratio
+from reporting.metrics import calculate_cagr, calculate_information_ratio
 from reporting.tables import build_summary_table
 from run_backtest import load_returns
 
@@ -29,6 +29,12 @@ COMPARISON_STRATEGIES = (
     "Max Sharpe",
     "Equal Weight",
     "Maximum Diversification",
+)
+EX_CELH_GRAPH_STRATEGIES = (
+    *CANDIDATE_STRATEGIES,
+    ELIGIBLE_BASELINE,
+    "Equal Weight",
+    "SPY",
 )
 
 
@@ -382,6 +388,57 @@ def generate_benchmark_comparison_graphs(
     _save_figure(figure, output_dir / "strategy_benchmark_annual_returns.png")
 
 
+def generate_ex_celh_sensitivity_graph(
+    full: RunArtifacts,
+    ex_celh: RunArtifacts,
+    output_dir: Path,
+) -> None:
+    """Plot ex-CELH equity curves and full-versus-ex-CELH CAGR sensitivity."""
+    if not full.values.index.equals(ex_celh.values.index):
+        raise ValueError("Full and ex-CELH value dates must match exactly")
+    missing_strategies = set(EX_CELH_GRAPH_STRATEGIES).difference(ex_celh.values.columns)
+    if missing_strategies:
+        raise ValueError(f"Ex-CELH values are missing strategies: {sorted(missing_strategies)}")
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    figure, axes = plt.subplots(
+        2,
+        1,
+        figsize=(12, 11),
+        gridspec_kw={"height_ratios": [2.0, 1.0]},
+    )
+
+    ex_celh_values = ex_celh.values.loc[:, EX_CELH_GRAPH_STRATEGIES]
+    normalized_values = ex_celh_values.div(ex_celh_values.iloc[0])
+    normalized_values.plot(ax=axes[0])
+    axes[0].set(
+        title="Ex-CELH Strategy Equity Curves",
+        ylabel="Growth of $1",
+        xlabel="Date",
+    )
+    axes[0].grid(alpha=0.25)
+
+    cagr_comparison = pd.DataFrame(
+        {
+            "Full Universe": [calculate_cagr(full.values[strategy]) for strategy in EX_CELH_GRAPH_STRATEGIES],
+            "Ex-CELH": [calculate_cagr(ex_celh.values[strategy]) for strategy in EX_CELH_GRAPH_STRATEGIES],
+        },
+        index=EX_CELH_GRAPH_STRATEGIES,
+    )
+    cagr_comparison.plot(kind="bar", ax=axes[1])
+    axes[1].set(
+        title="CAGR Sensitivity to Excluding CELH",
+        ylabel="CAGR",
+        xlabel="Strategy",
+    )
+    axes[1].yaxis.set_major_formatter(plt.FuncFormatter(lambda value, _: f"{value:.0%}"))
+    axes[1].tick_params(axis="x", rotation=20)
+    axes[1].grid(axis="y", alpha=0.25)
+
+    figure.suptitle("CELH Exclusion Robustness Test", fontsize=15)
+    _save_figure(figure, output_dir / "ex_celh_sensitivity.png")
+
+
 def generate_diagnostic_graphs(
     artifacts: RunArtifacts,
     annual: pd.DataFrame,
@@ -491,6 +548,7 @@ def generate_report(
     all_strategies = build_all_strategy_summary(full)
     generate_diagnostic_graphs(full, annual, input_dir)
     generate_benchmark_comparison_graphs(full, input_dir)
+    generate_ex_celh_sensitivity_graph(full, ex_celh, input_dir)
 
     csv_outputs: dict[Path, tuple[pd.DataFrame | pd.Series, dict[str, object]]] = {
         input_dir / "comparison_summary.csv": (summary, {"index": False}),
