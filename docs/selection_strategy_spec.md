@@ -195,3 +195,14 @@ Evaluate PAM and HDBSCAN independently. A selector is **research-promising** onl
 Record each gate and its supporting value in `decision.json`. A failed research gate does not invalidate the run; classify the selector as feasible-but-not-promising or data-infeasible as appropriate.
 
 Any report must lead with the gate outcome and disclose the retrospective universe, limited six-year evaluation, missing fundamental coverage, and CELH sensitivity. Even a passing result may only be described as a **“promising historical walk-forward result.”**
+
+## Recorded Hybrid-Source Run
+
+The source-feasible run executed from commit `96ab6e9456be187e221246081173ed1781c1e47d` with 25/30 eligible names (83.33%) at every rebalance. Ten deterministic full/ex-CELH CSV hashes matched on rerun.
+
+- Source manifest: `8205e04d3e5426d16efc05aee4de546ec1f8caedbf6146b76a8acd677a18ece3`
+- Full metadata: `3c0076797c8b1b805ff343939e1d36d70372257f9fc1e9a1488bafbf34b8cced`
+- Ex-CELH metadata: `7d1946564da16f0bedbf6e2bba7ea9b19a60ed7f3a432a4107a908bf591fa034`
+- Decision file: `1baf51c27f24731010f3f6668e2ef655a4c56ea22ff917dc75a0ce62311876a4`
+
+Density Selection produced 21.82% CAGR and a 0.9493 Sharpe but failed annual-consistency and ex-CELH gates. Partitioning Selection produced 16.60% CAGR and a 0.7591 Sharpe but failed the eligible-baseline CAGR and information-ratio gates. Both are classified `feasible-but-not-promising`; neither passed every preregistered promotion gate.
