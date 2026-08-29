@@ -959,7 +959,7 @@ The method must:
 4. write one atomic CSV per symbol under `data/source_cache/yahoo/`;
 5. reuse caches only after verifying that every cache covers the requested start/end bounds; partial or stale caches must fail or be refreshed explicitly;
 6. request dates from `2017-01-01` through `2026-01-02`, covering all filing periods and price cutoffs;
-7. raise with the exact missing symbols when Yahoo returns incomplete data.
+7. preserve exact missing symbols in cache metadata so the coverage builder can record ticker-level failures; strict callers still raise, while the source-probe caller continues without imputation.
 
 - [ ] **Step 5: Test the cache without network**
 

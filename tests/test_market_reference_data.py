@@ -77,6 +77,33 @@ def test_from_yfinance_rejects_missing_symbol(tmp_path, monkeypatch):
         )
 
 
+def test_from_yfinance_can_preserve_missing_symbol_for_coverage_audit(tmp_path, monkeypatch):
+    def missing_qsr(symbols, **kwargs):
+        return downloaded_frame([symbol for symbol in symbols if symbol != "QSR.TO"])
+
+    monkeypatch.setattr("market_reference_data.yf.download", missing_qsr)
+    market = MarketReferenceData.from_yfinance(
+        ("TEST", "QSR.TO"),
+        pd.Timestamp("2017-01-01"),
+        pd.Timestamp("2026-01-02"),
+        tmp_path,
+        refresh=True,
+        allow_missing=True,
+    )
+
+    assert market.close_before("TEST", pd.Timestamp("2020-01-01")).value == 11.0
+    with pytest.raises(ValueError, match="QSR.TO"):
+        market.close_before("QSR.TO", pd.Timestamp("2020-01-01"))
+    cached = MarketReferenceData.from_yfinance(
+        ("TEST", "QSR.TO"),
+        pd.Timestamp("2017-01-01"),
+        pd.Timestamp("2026-01-02"),
+        tmp_path,
+        allow_missing=True,
+    )
+    assert cached.close_before("TEST", pd.Timestamp("2020-01-01")).value == 11.0
+
+
 def test_from_yfinance_rejects_partial_cache_range(tmp_path, monkeypatch):
     symbols = ("TEST", "CADUSD=X", "EURUSD=X", "GBPUSD=X")
     for symbol in symbols:

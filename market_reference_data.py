@@ -115,6 +115,7 @@ class MarketReferenceData:
         end: pd.Timestamp,
         cache_dir: Path,
         refresh: bool = False,
+        allow_missing: bool = False,
     ) -> MarketReferenceData:
         """Load complete caches or download unadjusted closes in one Yahoo request."""
         start = pd.Timestamp(start).normalize()
@@ -124,9 +125,23 @@ class MarketReferenceData:
         requested_symbols = tuple(dict.fromkeys((*symbols, *FX_SYMBOLS.values())))
         cache_paths = {symbol: cache_dir / f"{_safe_filename(symbol)}.csv" for symbol in requested_symbols}
 
-        if not refresh and all(path.exists() for path in cache_paths.values()):
-            _validate_cache_coverage(cache_dir, requested_symbols, start, end)
-            return cls({symbol: _read_cached_history(path) for symbol, path in cache_paths.items()})
+        if not refresh and _coverage_path(cache_dir).exists():
+            available_symbols = _validate_cache_coverage(
+                cache_dir,
+                requested_symbols,
+                start,
+                end,
+            )
+            missing_symbols = sorted(set(requested_symbols).difference(available_symbols))
+            if missing_symbols and not allow_missing:
+                raise ValueError(f"Yahoo cache has no Close history for: {missing_symbols}")
+            return cls(
+                {
+                    symbol: _read_cached_history(cache_paths[symbol])
+                    for symbol in requested_symbols
+                    if symbol in available_symbols
+                }
+            )
 
         downloaded = yf.download(
             list(requested_symbols),
@@ -138,11 +153,11 @@ class MarketReferenceData:
         )
         histories = _extract_close_histories(downloaded, requested_symbols)
         missing_symbols = sorted(set(requested_symbols).difference(histories))
-        if missing_symbols:
+        if missing_symbols and not allow_missing:
             raise ValueError(f"Yahoo returned no Close history for: {missing_symbols}")
         for symbol, history in histories.items():
             _write_history_atomically(history, cache_paths[symbol])
-        _write_cache_coverage(cache_dir, requested_symbols, start, end)
+        _write_cache_coverage(cache_dir, requested_symbols, tuple(histories), start, end)
         return cls(histories)
 
 
@@ -205,6 +220,7 @@ def _coverage_path(cache_dir: Path) -> Path:
 def _write_cache_coverage(
     cache_dir: Path,
     symbols: tuple[str, ...],
+    available_symbols: tuple[str, ...],
     start: pd.Timestamp,
     end: pd.Timestamp,
 ) -> None:
@@ -213,6 +229,7 @@ def _write_cache_coverage(
     temporary = target.with_suffix(".json.tmp")
     payload = {
         "symbols": list(symbols),
+        "available_symbols": list(available_symbols),
         "requested_start": start.date().isoformat(),
         "requested_end": end.date().isoformat(),
     }
@@ -229,7 +246,7 @@ def _validate_cache_coverage(
     symbols: tuple[str, ...],
     start: pd.Timestamp,
     end: pd.Timestamp,
-) -> None:
+) -> set[str]:
     path = _coverage_path(cache_dir)
     if not path.exists():
         raise ValueError("Yahoo cache coverage metadata is missing; rerun with refresh=True")
@@ -241,3 +258,10 @@ def _validate_cache_coverage(
         raise ValueError(
             "Yahoo cache does not cover the requested symbols/date range; rerun with refresh=True"
         )
+    available_symbols = set(payload.get("available_symbols", payload.get("symbols", [])))
+    missing_cache_files = [
+        symbol for symbol in available_symbols if not (cache_dir / f"{_safe_filename(symbol)}.csv").exists()
+    ]
+    if missing_cache_files:
+        raise ValueError(f"Yahoo cache files are missing for: {sorted(missing_cache_files)}")
+    return available_symbols

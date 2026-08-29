@@ -91,6 +91,7 @@ def build_source_clients(
         MARKET_END,
         cache_dir / "yahoo",
         refresh=refresh,
+        allow_missing=True,
     )
     return sec_client, market_data
 

@@ -37,3 +37,27 @@ The user approved an automated **SEC EDGAR Company Facts + yfinance unadjusted p
 The live source probe has not run because SEC fair-access requests require an explicitly supplied contact-bearing `SEC_USER_AGENT`; the implementation never derives or transmits the Git email automatically. Historical selector metrics remain `N/A` until the source probe proves at least 24 of 30 eligible names at every rebalance and the user separately approves the backtest command.
 
 If the automated pilot fails coverage or share/currency reconciliation, the experiment remains data-infeasible. Current values, revised future filings, ambiguous share aggregation, and silent manual fills remain prohibited.
+
+## Automated SEC/Yahoo coverage result
+
+The approved source probe completed without invoking a backtest. Methodology: `sec-yfinance-v1`. Source manifest SHA-256: `a87ac6afa3f9eeb2439f00f8ee6bd7c0960b3426fa7fb1dea1f483633358a1ed`.
+
+| Rebalance | Eligible | Coverage | 80% gate |
+|---|---:|---:|:---:|
+| 2020-01-01 | 18 | 60.00% | Fail |
+| 2021-01-01 | 18 | 60.00% | Fail |
+| 2022-01-01 | 18 | 60.00% | Fail |
+| 2023-01-01 | 18 | 60.00% | Fail |
+| 2024-01-01 | 19 | 63.33% | Fail |
+| 2025-01-01 | 18 | 60.00% | Fail |
+
+Repeated automated failures were:
+
+- BF-B, BUD, and BTI: filed-share observations exceeded the frozen staleness limit;
+- EA: Yahoo no longer returned the required unadjusted historical close series;
+- META and early SNAP years: SEC Company Facts lacked eligible point-in-time cover shares under the frozen tags;
+- STZ: SEC Company Facts lacked eligible shares under both frozen standard tags;
+- QSR in 2025: filed shares exceeded the staleness limit; and
+- PRNDY, TCEHY, NTDOY, CCOEY, and UBSFY: preregistered manual-only instruments.
+
+**Decision: data-infeasible.** The 24-of-30 gate failed in every year, so PAM/HDBSCAN historical returns and real-data graphs were not generated. Changing staleness limits, using current Yahoo shares, substituting adjusted prices, or adding post-result manual values would violate the frozen source contract. Any broader issuer-report/manual-source effort requires a separately dated plan.
