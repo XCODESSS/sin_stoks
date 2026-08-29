@@ -61,3 +61,9 @@ Repeated automated failures were:
 - PRNDY, TCEHY, NTDOY, CCOEY, and UBSFY: preregistered manual-only instruments.
 
 **Decision: data-infeasible.** The 24-of-30 gate failed in every year, so PAM/HDBSCAN historical returns and real-data graphs were not generated. Changing staleness limits, using current Yahoo shares, substituting adjusted prices, or adding post-result manual values would violate the frozen source contract. Any broader issuer-report/manual-source effort requires a separately dated plan.
+
+## Financial Modeling Prep access pilot
+
+A user-supplied FMP key was tested transiently and was not written to source code, artifacts, or Git. Authentication succeeded on the profile endpoint, but the current subscription returned HTTP 402 for historical statements or market capitalization for BF-B, BUD, BTI, EA, STZ, QSR, PRNDY, TCEHY, NTDOY, CCOEY, and UBSFY. META and SNAP exposed only 64 recent market-cap observations (2026-05-29 through 2026-08-28), not the required 2019-2024 history; their historical income statements were also restricted. Legacy v3 endpoints returned HTTP 403.
+
+Therefore, the current FMP subscription cannot satisfy the point-in-time contract. A plan that unlocks historical statements and historical market capitalization, including the international/OTC symbols, would need a new coverage pilot before use.
