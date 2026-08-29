@@ -75,3 +75,20 @@ A user-supplied SimFin key was tested transiently and was not written to source 
 Income statements with publication dates were available for EA, META, SNAP, STZ, and QSR, but every returned row was marked `Restated`; these values are not accepted as point-in-time earnings without proof that the published-date/value pairing preserves the originally reported observation. BUD and BTI statement coverage was annual and insufficient in early rebalances.
 
 SimFin is therefore promising as a **market-reference fallback**, especially for EA's missing Yahoo prices and STZ's historical shares, but it cannot replace SEC filing chronology wholesale. A separately frozen hybrid-source amendment could retain SEC earnings, add explicit SEC share-tag fallbacks for META/SNAP, use documented annual-share staleness rules for foreign filers, and use SimFin only where its price/share history is auditable.
+
+## Frozen hybrid-source result
+
+The user approved the dated SEC + SimFin hybrid amendment before any selector returns were run. SEC remains the earnings source for every ticker. SimFin supplies only EA's unavailable raw close and STZ's historical shares; META uses a labeled SEC diluted weighted-average-share fallback, SNAP uses the SEC `SharesOutstanding` tag, and issuer-specific share-age limits handle documented annual/fiscal filing patterns.
+
+| Rebalance | Eligible | Coverage | 80% gate |
+|---|---:|---:|:---:|
+| 2020-01-01 | 25 | 83.33% | Pass |
+| 2021-01-01 | 25 | 83.33% | Pass |
+| 2022-01-01 | 25 | 83.33% | Pass |
+| 2023-01-01 | 25 | 83.33% | Pass |
+| 2024-01-01 | 25 | 83.33% | Pass |
+| 2025-01-01 | 25 | 83.33% | Pass |
+
+The validated candidate contains 150 records, every `available_date` is strictly before its rebalance, and no extraction errors remain among the 25 automated candidates. CCOEY, NTDOY, PRNDY, TCEHY, and UBSFY remain missing without imputation. Methodology: `sec-yahoo-simfin-v2`; source manifest SHA-256: `8205e04d3e5426d16efc05aee4de546ec1f8caedbf6146b76a8acd677a18ece3`.
+
+**Decision: source-feasible with disclosed approximations.** The strict 24-of-30 gate now passes in every year. META's denominator is diluted weighted-average shares rather than period-end shares, and SimFin's STZ share series lacks SEC acceptance timestamps; these limitations must remain visible in the final report and sensitivity interpretation.

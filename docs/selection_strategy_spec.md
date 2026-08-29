@@ -17,7 +17,7 @@ Changing any frozen parameter, formula, target count, gate, or robustness rule r
 
 ## Pre-Run Source Amendment
 
-The dated SEC+yfinance source plan adds a fair `Eligible Universe Equal Weight` baseline because automated point-in-time coverage may exclude foreign or OTC names. It also requires structured SEC/Yahoo provenance, explicit share-class reconciliation, unadjusted prices for market-cap reconstruction, and an explicitly supplied SEC User-Agent. This amendment was frozen before any historical selection run.
+The dated SEC+yfinance source plan adds a fair `Eligible Universe Equal Weight` baseline because automated point-in-time coverage may exclude foreign or OTC names. It also requires structured source provenance, explicit share-class reconciliation, unadjusted prices for market-cap reconstruction, and explicitly supplied API credentials. The later dated SEC + SimFin hybrid amendment retains SEC earnings chronology, permits only frozen ticker-specific price/share fallbacks, and records those approximations. Both amendments were frozen before any historical selection run.
 
 ## Research Boundaries
 

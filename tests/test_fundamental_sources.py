@@ -37,6 +37,19 @@ def test_multiclass_registry_is_explicit():
     assert {issuer.share_aggregation for issuer in SEC_ISSUERS.values()} == {"reconcile"}
 
 
+def test_hybrid_source_fallbacks_are_frozen_by_issuer():
+    assert SEC_ISSUERS["EA"].simfin_price_fallback
+    assert SEC_ISSUERS["STZ"].simfin_shares_fallback
+    assert SEC_ISSUERS["META"].duration_share_tags == (
+        ("us-gaap", "WeightedAverageNumberOfDilutedSharesOutstanding"),
+    )
+    assert SEC_ISSUERS["SNAP"].additional_instant_share_tags == (("us-gaap", "SharesOutstanding"),)
+    assert SEC_ISSUERS["BUD"].max_share_age_days == 400
+    assert SEC_ISSUERS["BTI"].max_share_age_days == 400
+    assert SEC_ISSUERS["BF-B"].max_share_age_days == 280
+    assert SEC_ISSUERS["QSR"].max_share_age_days == 280
+
+
 def test_issuer_config_rejects_unsafe_share_aggregation():
     with pytest.raises(ValueError, match="reconcile"):
         SecIssuerConfig("X", 1, "X", "USD", 1.0, "us-gaap", ("NetIncomeLoss",), "USD", "sum")

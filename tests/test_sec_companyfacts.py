@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import json
 
 import numpy as np
@@ -228,6 +229,47 @@ def test_multiclass_shares_reject_ambiguous_values():
             make_us_issuer(expected_share_classes=2),
             pd.Timestamp("2020-01-01"),
         )
+
+
+def test_filed_shares_supports_configured_instant_fallback_tag():
+    facts = make_share_facts([100.0])
+    concept = facts["facts"].pop("dei")["EntityCommonStockSharesOutstanding"]
+    facts["facts"]["us-gaap"] = {"SharesOutstanding": concept}
+    issuer = dataclasses.replace(
+        make_us_issuer(),
+        additional_instant_share_tags=(("us-gaap", "SharesOutstanding"),),
+    )
+
+    observation = select_filed_shares(facts, issuer, pd.Timestamp("2020-01-01"))
+
+    assert observation.shares == 100.0
+    assert observation.tag == "SharesOutstanding"
+
+
+def test_filed_shares_supports_weighted_average_duration_fallback():
+    facts = make_ttm_companyfacts()
+    records = facts["facts"]["us-gaap"].pop("NetIncomeLoss")["units"]["USD"]
+    facts["facts"]["us-gaap"]["WeightedAverageNumberOfDilutedSharesOutstanding"] = {
+        "units": {
+            "shares": [
+                {**records[1], "val": 90.0},
+                {
+                    **records[1],
+                    "start": "2019-07-01",
+                    "val": 80.0,
+                },
+            ]
+        }
+    }
+    issuer = dataclasses.replace(
+        make_us_issuer(),
+        duration_share_tags=(("us-gaap", "WeightedAverageNumberOfDilutedSharesOutstanding"),),
+    )
+
+    observation = select_filed_shares(facts, issuer, pd.Timestamp("2020-01-01"))
+
+    assert observation.shares == 90.0
+    assert observation.aggregation == "weighted_average_diluted_fallback"
 
 
 def test_filed_shares_ignore_future_filing():

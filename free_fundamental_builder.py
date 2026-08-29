@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from fundamental_sources import MANUAL_ONLY_TICKERS, SEC_ISSUERS, SecIssuerConfig
-from market_reference_data import MarketReferenceData
+from market_reference_data import MarketReferenceData, PriceObservation
 from sec_companyfacts import (
     EarningsObservation,
     SecCompanyFactsClient,
@@ -17,10 +17,10 @@ from sec_companyfacts import (
     select_filed_shares,
     select_ttm_earnings,
 )
+from simfin_reference_data import SimfinReferenceData
 
 _EXPECTED_UNIVERSE_SIZE = 30
 _MINIMUM_ELIGIBLE_ASSETS = 24
-_MAX_SHARE_AGE_DAYS = 200
 
 
 class MarketDataProtocol(Protocol):
@@ -46,10 +46,15 @@ def build_fundamental_record(
     earnings: EarningsObservation,
     shares: SharesObservation,
     market_data: MarketDataProtocol,
+    price_observation: PriceObservation | None = None,
 ) -> dict[str, object]:
     """Combine one issuer's point-in-time SEC and Yahoo observations."""
     rebalance_date = pd.Timestamp(rebalance_date)
-    price = market_data.close_before(issuer.price_symbol, rebalance_date, issuer.price_scale)
+    price = price_observation or market_data.close_before(
+        issuer.price_symbol,
+        rebalance_date,
+        issuer.price_scale,
+    )
     spot_fx = market_data.spot_usd_rate(issuer.price_currency, price.date)
     earnings_fx = market_data.average_usd_rate(
         issuer.earnings_unit,
@@ -57,10 +62,10 @@ def build_fundamental_record(
         earnings.end,
     )
     share_age_days = (price.date - shares.observation_date).days
-    if share_age_days < 0 or share_age_days > _MAX_SHARE_AGE_DAYS:
+    if share_age_days < 0 or share_age_days > issuer.max_share_age_days:
         raise ValueError(
             f"Filed shares for {issuer.ticker} are {share_age_days} days from the price date; "
-            f"allowed range is 0-{_MAX_SHARE_AGE_DAYS} days"
+            f"allowed range is 0-{issuer.max_share_age_days} days"
         )
 
     market_cap_usd = price.value * shares.shares * spot_fx
@@ -93,7 +98,9 @@ def build_fundamental_record(
         "trailing_pe": trailing_pe,
         "market_cap": market_cap_usd,
         "earnings_positive": bool(earnings_positive),
-        "source": "SEC EDGAR Company Facts + Yahoo Finance unadjusted primary-listing close",
+        "source": f"SEC earnings + {shares.source} + {price.source}",
+        "price_source": price.source,
+        "shares_source": shares.source,
         "cik": issuer.cik,
         "price_symbol": issuer.price_symbol,
         "price_date": price.date,
@@ -121,16 +128,41 @@ def _build_one_record(
     market_data: MarketReferenceData,
     issuer: SecIssuerConfig,
     rebalance_date: pd.Timestamp,
+    simfin_data: SimfinReferenceData | None,
 ) -> dict[str, object]:
     companyfacts = sec_client.get_companyfacts(issuer.cik)
     earnings = select_ttm_earnings(companyfacts, issuer, rebalance_date)
-    shares = select_filed_shares(companyfacts, issuer, rebalance_date)
-    return build_fundamental_record(issuer, rebalance_date, earnings, shares, market_data)
+    try:
+        shares = select_filed_shares(companyfacts, issuer, rebalance_date)
+    except ValueError:
+        if not issuer.simfin_shares_fallback or simfin_data is None:
+            raise
+        shares = simfin_data.shares_before(issuer.ticker, rebalance_date)
+
+    try:
+        price = market_data.close_before(
+            issuer.price_symbol,
+            rebalance_date,
+            issuer.price_scale,
+        )
+    except ValueError:
+        if not issuer.simfin_price_fallback or simfin_data is None:
+            raise
+        price = simfin_data.close_before(issuer.ticker, rebalance_date)
+    return build_fundamental_record(
+        issuer,
+        rebalance_date,
+        earnings,
+        shares,
+        market_data,
+        price_observation=price,
+    )
 
 
 def build_free_fundamentals(
     sec_client: SecCompanyFactsClient,
     market_data: MarketReferenceData,
+    simfin_data: SimfinReferenceData | None = None,
     rebalance_years: tuple[int, ...] = (2020, 2021, 2022, 2023, 2024, 2025),
 ) -> FreeFundamentalBuild:
     """Build all automated issuer/rebalance records without imputation."""
@@ -144,7 +176,13 @@ def build_free_fundamentals(
         failed_tickers: set[str] = set()
         for ticker, issuer in sorted(SEC_ISSUERS.items()):
             try:
-                record = _build_one_record(sec_client, market_data, issuer, rebalance_date)
+                record = _build_one_record(
+                    sec_client,
+                    market_data,
+                    issuer,
+                    rebalance_date,
+                    simfin_data,
+                )
             except (KeyError, TypeError, ValueError) as error:
                 failed_tickers.add(ticker)
                 error_rows.append(

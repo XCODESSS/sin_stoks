@@ -71,6 +71,8 @@ def test_builder_calculates_market_cap_pe_and_provenance():
     assert record["available_date"] == pd.Timestamp("2019-12-30")
     assert record["cik"] == 1
     assert record["earnings_accessions"] == "annual|interim"
+    assert record["price_source"] == "Yahoo Finance unadjusted close"
+    assert record["shares_source"] == "SEC EDGAR Company Facts"
 
 
 def test_builder_keeps_negative_earnings_without_pe():
@@ -81,6 +83,22 @@ def test_builder_keeps_negative_earnings_without_pe():
     )
     assert record["earnings_positive"] is False
     assert np.isnan(record["trailing_pe"])
+
+
+def test_builder_honors_frozen_issuer_specific_share_age():
+    earnings, shares = make_inputs()
+    shares = dataclasses.replace(shares, observation_date=pd.Timestamp("2019-01-01"))
+    issuer = dataclasses.replace(make_issuer(), max_share_age_days=400)
+
+    record = build_fundamental_record(
+        issuer,
+        pd.Timestamp("2020-01-01"),
+        earnings,
+        shares,
+        FakeMarket(),
+    )
+
+    assert record["market_cap"] > 0
 
 
 def test_builder_rejects_future_or_stale_inputs():
@@ -115,7 +133,7 @@ def test_coverage_uses_frozen_thirty_asset_denominator(monkeypatch, eligible, pa
         frozenset({"M0", "M1", "M2", "M3", "M4"}),
     )
 
-    def fake_build(sec_client, market_data, issuer, rebalance_date):
+    def fake_build(sec_client, market_data, issuer, rebalance_date, simfin_data):
         if issuer.cik > eligible:
             raise ValueError("synthetic missing fact")
         return {

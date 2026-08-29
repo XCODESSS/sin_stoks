@@ -63,12 +63,16 @@ def successful_build() -> FreeFundamentalBuild:
 def test_preparation_writes_only_source_outputs(tmp_path, monkeypatch):
     build = successful_build()
     monkeypatch.setattr(
-        "prepare_free_fundamentals.build_source_clients", lambda **kwargs: (object(), object())
+        "prepare_free_fundamentals.build_source_clients",
+        lambda **kwargs: (object(), object(), object()),
     )
-    monkeypatch.setattr("prepare_free_fundamentals.build_free_fundamentals", lambda sec, market: build)
+    monkeypatch.setattr(
+        "prepare_free_fundamentals.build_free_fundamentals",
+        lambda sec, market, simfin: build,
+    )
     monkeypatch.setattr(
         "prepare_free_fundamentals.build_source_manifest",
-        lambda *args, **kwargs: {"methodology": "sec-yfinance-v1"},
+        lambda *args, **kwargs: {"methodology": "sec-yahoo-simfin-v2"},
     )
     fundamentals_path = tmp_path / "data/fundamentals_point_in_time.csv"
     output_dir = tmp_path / "outputs/selection_experiment"
@@ -78,6 +82,7 @@ def test_preparation_writes_only_source_outputs(tmp_path, monkeypatch):
         output_dir=output_dir,
         cache_dir=tmp_path / "data/source_cache",
         sec_user_agent="sin_stoks test test@example.com",
+        simfin_api_key="simfin-secret",
     )
 
     assert result.coverage["coverage_passed"].all()
@@ -86,7 +91,9 @@ def test_preparation_writes_only_source_outputs(tmp_path, monkeypatch):
     assert "earnings_accessions" in loaded.columns
     assert (output_dir / "source_coverage.csv").exists()
     assert (output_dir / "source_errors.csv").exists()
-    assert json.loads((output_dir / "source_manifest.json").read_text())["methodology"] == "sec-yfinance-v1"
+    assert (
+        json.loads((output_dir / "source_manifest.json").read_text())["methodology"] == "sec-yahoo-simfin-v2"
+    )
     assert not (output_dir / "full").exists()
     assert not (tmp_path / "outputs/portfolio_backtest").exists()
 
@@ -102,6 +109,21 @@ def test_preparation_rejects_missing_contact_before_source_clients(tmp_path, mon
             output_dir=tmp_path / "outputs",
             cache_dir=tmp_path / "cache",
             sec_user_agent="",
+        )
+
+
+def test_preparation_rejects_missing_simfin_key_before_source_clients(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "prepare_free_fundamentals.build_source_clients",
+        lambda **kwargs: pytest.fail("source clients must not run"),
+    )
+    with pytest.raises(ValueError, match="SIMFIN_API_KEY"):
+        prepare_free_fundamentals(
+            fundamentals_path=tmp_path / "fundamentals.csv",
+            output_dir=tmp_path / "outputs",
+            cache_dir=tmp_path / "cache",
+            sec_user_agent="sin_stoks test test@example.com",
+            simfin_api_key="",
         )
 
 

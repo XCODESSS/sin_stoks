@@ -61,6 +61,7 @@ class SharesObservation:
     accession: str
     aggregation: str
     component_count: int
+    source: str = "SEC EDGAR Company Facts"
 
 
 Downloader = Callable[[str, str], bytes]
@@ -330,6 +331,43 @@ def _select_shares_for_tag(
     )
 
 
+def _select_duration_shares_for_tag(
+    companyfacts: dict[str, object],
+    issuer: SecIssuerConfig,
+    namespace: str,
+    tag: str,
+    cutoff: pd.Timestamp,
+) -> SharesObservation:
+    records = normalize_fact_records(companyfacts, namespace, tag, "shares")
+    eligible = [
+        record
+        for record in records
+        if record.start is not None
+        and record.filed < cutoff
+        and record.end < cutoff
+        and record.form in ANNUAL_FORMS | INTERIM_FORMS
+        and record.value > 0
+    ]
+    if not eligible:
+        raise ValueError("no eligible filed duration shares")
+    latest_end = max(record.end for record in eligible)
+    latest_end_records = [record for record in eligible if record.end == latest_end]
+    latest_filing_key = max((record.filed, record.accession) for record in latest_end_records)
+    filing_records = [
+        record for record in latest_end_records if (record.filed, record.accession) == latest_filing_key
+    ]
+    selected = max(filing_records, key=_duration_days)
+    return SharesObservation(
+        observation_date=selected.end,
+        available_date=selected.filed,
+        shares=selected.value,
+        tag=tag,
+        accession=selected.accession,
+        aggregation="weighted_average_diluted_fallback",
+        component_count=1,
+    )
+
+
 def select_filed_shares(
     companyfacts: dict[str, object],
     issuer: SecIssuerConfig,
@@ -338,12 +376,25 @@ def select_filed_shares(
     """Select and reconcile the latest eligible SEC common-share facts."""
     cutoff = pd.Timestamp(cutoff)
     attempted: list[str] = []
-    for namespace, tag in (
+    instant_tags = (
         ("dei", "EntityCommonStockSharesOutstanding"),
         ("us-gaap", "CommonStockSharesOutstanding"),
-    ):
+        *issuer.additional_instant_share_tags,
+    )
+    for namespace, tag in instant_tags:
         try:
             return _select_shares_for_tag(companyfacts, issuer, namespace, tag, cutoff)
+        except ValueError as error:
+            attempted.append(f"{namespace}.{tag}: {error}")
+    for namespace, tag in issuer.duration_share_tags:
+        try:
+            return _select_duration_shares_for_tag(
+                companyfacts,
+                issuer,
+                namespace,
+                tag,
+                cutoff,
+            )
         except ValueError as error:
             attempted.append(f"{namespace}.{tag}: {error}")
     reasons = "; ".join(attempted)

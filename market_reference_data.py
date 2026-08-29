@@ -26,6 +26,7 @@ class PriceObservation:
     symbol: str
     date: pd.Timestamp
     value: float
+    source: str = "Yahoo Finance unadjusted close"
 
 
 class MarketReferenceData:

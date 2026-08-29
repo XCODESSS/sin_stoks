@@ -20,11 +20,12 @@ from fundamental_data import load_fundamentals
 from fundamental_sources import SEC_ISSUERS
 from market_reference_data import FX_SYMBOLS, MarketReferenceData
 from sec_companyfacts import SEC_COMPANYFACTS_URL, SecCompanyFactsClient
+from simfin_reference_data import SIMFIN_PRICES_URL, SimfinReferenceData
 
 SOURCE_CACHE_DIR = DATA_DIR / "source_cache"
 MARKET_START = pd.Timestamp("2017-01-01")
 MARKET_END = pd.Timestamp("2026-01-02")
-METHODOLOGY_VERSION = "sec-yfinance-v1"
+METHODOLOGY_VERSION = "sec-yahoo-simfin-v2"
 PROVENANCE_COLUMNS = [
     "ticker",
     "rebalance_date",
@@ -34,6 +35,8 @@ PROVENANCE_COLUMNS = [
     "market_cap",
     "earnings_positive",
     "source",
+    "price_source",
+    "shares_source",
     "cik",
     "price_symbol",
     "price_date",
@@ -76,8 +79,9 @@ def _git_commit() -> str:
 def build_source_clients(
     cache_dir: Path,
     sec_user_agent: str,
+    simfin_api_key: str,
     refresh: bool = False,
-) -> tuple[SecCompanyFactsClient, MarketReferenceData]:
+) -> tuple[SecCompanyFactsClient, MarketReferenceData, SimfinReferenceData]:
     """Create configured source clients, downloading only at this boundary."""
     sec_client = SecCompanyFactsClient(
         user_agent=sec_user_agent,
@@ -93,7 +97,12 @@ def build_source_clients(
         refresh=refresh,
         allow_missing=True,
     )
-    return sec_client, market_data
+    simfin_data = SimfinReferenceData(
+        api_key=simfin_api_key,
+        cache_dir=cache_dir / "simfin",
+        refresh=refresh,
+    )
+    return sec_client, market_data, simfin_data
 
 
 def _cache_manifest(cache_dir: Path) -> list[dict[str, object]]:
@@ -124,6 +133,15 @@ def build_source_manifest(
         "sec": {
             "companyfacts_url": SEC_COMPANYFACTS_URL,
             "user_agent_sha256": user_agent_hash,
+        },
+        "simfin": {
+            "prices_url": SIMFIN_PRICES_URL,
+            "approved_price_fallbacks": sorted(
+                ticker for ticker, issuer in SEC_ISSUERS.items() if issuer.simfin_price_fallback
+            ),
+            "approved_share_fallbacks": sorted(
+                ticker for ticker, issuer in SEC_ISSUERS.items() if issuer.simfin_shares_fallback
+            ),
         },
         "yahoo": {
             "start": MARKET_START.date().isoformat(),
@@ -185,17 +203,21 @@ def prepare_free_fundamentals(
     output_dir: Path = SELECTION_OUTPUT_DIR,
     cache_dir: Path = SOURCE_CACHE_DIR,
     sec_user_agent: str = "",
+    simfin_api_key: str = "",
     refresh: bool = False,
 ) -> FreeFundamentalBuild:
     """Build, validate, and atomically persist source artifacts only."""
     if "@" not in sec_user_agent:
         raise ValueError("SEC_USER_AGENT must be explicitly set and include a contact email")
-    sec_client, market_data = build_source_clients(
+    if not simfin_api_key.strip():
+        raise ValueError("SIMFIN_API_KEY must be explicitly set")
+    sec_client, market_data, simfin_data = build_source_clients(
         cache_dir=cache_dir,
         sec_user_agent=sec_user_agent,
+        simfin_api_key=simfin_api_key,
         refresh=refresh,
     )
-    build = build_free_fundamentals(sec_client, market_data)
+    build = build_free_fundamentals(sec_client, market_data, simfin_data)
     _write_validated_fundamentals(build, fundamentals_path)
     write_csv_outputs_atomically(
         {
@@ -217,11 +239,13 @@ def main() -> None:
     args = parser.parse_args()
 
     sec_user_agent = os.environ.get("SEC_USER_AGENT", "")
+    simfin_api_key = os.environ.get("SIMFIN_API_KEY", "")
     build = prepare_free_fundamentals(
         fundamentals_path=args.fundamentals,
         output_dir=args.output_dir,
         cache_dir=args.cache_dir,
         sec_user_agent=sec_user_agent,
+        simfin_api_key=simfin_api_key,
         refresh=args.refresh,
     )
     print(build.coverage.to_string(index=False))
