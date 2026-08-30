@@ -1,0 +1,60 @@
+{
+  "Density Selection": {
+    "classification": "feasible-but-not-promising",
+    "gates": {
+      "beats_eligible_baseline_in_four_of_six_years": false,
+      "cagr_exceeds_full_eligible_and_spy": true,
+      "coverage_at_least_eighty_percent": true,
+      "drawdown_within_three_percentage_points": true,
+      "ex_celh_cagr_exceeds_full_and_eligible": false,
+      "positive_information_ratio_vs_eligible_baseline": true,
+      "quality_checks_passed": true,
+      "recurring_turnover_at_most_sixty_percent": true
+    },
+    "research_promising": false,
+    "supporting_values": {
+      "annual_wins_vs_eligible_baseline": 3,
+      "average_recurring_turnover": 0.4382187698967437,
+      "candidate_cagr": 0.21823646592348767,
+      "candidate_max_drawdown": -0.2540110464162628,
+      "eligible_baseline_max_drawdown": -0.2725031408919252,
+      "eligible_universe_equal_weight_cagr": 0.18244751489356914,
+      "equal_weight_cagr": 0.15697736411561913,
+      "ex_celh_candidate_cagr": 0.12378935527917179,
+      "ex_celh_eligible_universe_equal_weight_cagr": 0.12403012500313482,
+      "ex_celh_equal_weight_cagr": 0.10903912323132525,
+      "information_ratio_vs_eligible_baseline": 0.4733058011526277,
+      "minimum_fundamental_coverage": 0.8333333333333334,
+      "spy_cagr": 0.1485333715716337
+    }
+  },
+  "Partitioning Selection": {
+    "classification": "feasible-but-not-promising",
+    "gates": {
+      "beats_eligible_baseline_in_four_of_six_years": true,
+      "cagr_exceeds_full_eligible_and_spy": false,
+      "coverage_at_least_eighty_percent": true,
+      "drawdown_within_three_percentage_points": true,
+      "ex_celh_cagr_exceeds_full_and_eligible": true,
+      "positive_information_ratio_vs_eligible_baseline": false,
+      "quality_checks_passed": true,
+      "recurring_turnover_at_most_sixty_percent": true
+    },
+    "research_promising": false,
+    "supporting_values": {
+      "annual_wins_vs_eligible_baseline": 5,
+      "average_recurring_turnover": 0.44061144657182094,
+      "candidate_cagr": 0.1659513686251064,
+      "candidate_max_drawdown": -0.2543929336931543,
+      "eligible_baseline_max_drawdown": -0.2725031408919252,
+      "eligible_universe_equal_weight_cagr": 0.18244751489356914,
+      "equal_weight_cagr": 0.15697736411561913,
+      "ex_celh_candidate_cagr": 0.12601230817744047,
+      "ex_celh_eligible_universe_equal_weight_cagr": 0.12403012500313482,
+      "ex_celh_equal_weight_cagr": 0.10903912323132525,
+      "information_ratio_vs_eligible_baseline": -0.17137070411947142,
+      "minimum_fundamental_coverage": 0.8333333333333334,
+      "spy_cagr": 0.1485333715716337
+    }
+  }
+}

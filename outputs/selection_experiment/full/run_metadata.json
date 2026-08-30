@@ -1,0 +1,38 @@
+{
+  "asset_count": 30,
+  "asset_return_end": "2025-12-26T00:00:00",
+  "asset_return_rows": 456,
+  "asset_return_start": "2017-04-07T00:00:00",
+  "exclusions": [],
+  "git_commit": "96ab6e9456be187e221246081173ed1781c1e47d",
+  "inputs": {
+    "asset_returns": {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\weekly_returns.csv",
+      "sha256": "1ba4e8158e472cae18174437b5ca8299f98f4b6611ab3d3c27e1dfa13137e203"
+    },
+    "fundamentals": {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\fundamentals_point_in_time.csv",
+      "sha256": "78ca01bc0a69147d89359b72d35ee4dd7a4c6a668edd308576f307fd4de7d0ec"
+    },
+    "spy_returns": {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\spy_weekly_returns.csv",
+      "sha256": "24793d76ce858f6140e1886293518d5b8a361e1a6cb3cac491e6b680f324f1ff"
+    }
+  },
+  "parameters": {
+    "cluster_count": 6,
+    "correlation_weight": 0.5,
+    "diversification_penalty": 0.25,
+    "feature_weight": 0.5,
+    "lookback_weeks": 104,
+    "max_weight": 0.25,
+    "min_cluster_size": 3,
+    "min_coverage": 0.8,
+    "min_samples": 3,
+    "target_count": 12
+  },
+  "spy_return_end": "2025-12-26T00:00:00",
+  "spy_return_rows": 521,
+  "spy_return_start": "2016-01-08T00:00:00",
+  "timestamp_utc": "2026-08-29T12:25:57.862074+00:00"
+}

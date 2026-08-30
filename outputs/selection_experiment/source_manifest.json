@@ -1,0 +1,918 @@
+{
+  "cache_files": [
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0000014693.json",
+      "sha256": "76b1fe8562bab1287f4dca3cb17e464e6eb0c34c79e30fd519e2670f33220508",
+      "size_bytes": 3084654
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0000016918.json",
+      "sha256": "d9d8d3d23f255afc4fc6c38eb72a4b3c83d0f51046cb9c6cb2f2cbdf26e2a35f",
+      "size_bytes": 3810307
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0000021344.json",
+      "sha256": "53d363a9aa3071406cda9857654358f4dca42e174a1defb8cc1ce9ad2a4c9e40",
+      "size_bytes": 5028478
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0000063908.json",
+      "sha256": "0394e814d75510be107679b026e2df6e5d02d4f2029166911aa4924f9556681f",
+      "size_bytes": 3579350
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0000077476.json",
+      "sha256": "7694c322779ef273d15b3791729e5f2d261ce6ed1839be8ff014a33f537375be",
+      "size_bytes": 4932092
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0000102037.json",
+      "sha256": "6c16c913e55bbba701cb1b3de6cb285dda453dd30c13a216b4737797804206db",
+      "size_bytes": 3849298
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0000712515.json",
+      "sha256": "5fdadc8997ca467bce1a27163cb1073fef154776c4406f1d2a78b392c391263d",
+      "size_bytes": 3754176
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0000764180.json",
+      "sha256": "582b5eb5dbbe9b567af2d187a19d9a7d59f7d7dda6a37a5037ac7b6972262c3d",
+      "size_bytes": 3771084
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0000789019.json",
+      "sha256": "f8aae2965b20ad0df44bdf7ccbedf797d275b6b8dc030154a7a311361bb7246f",
+      "size_bytes": 4881196
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0000835403.json",
+      "sha256": "ff1d402a93fc2109ed066f35a801e5c06b0b83e7eafc6cabeef514f4db4dd007",
+      "size_bytes": 1105040
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0000865752.json",
+      "sha256": "64144475e8bf6500e75b335c46c775c2f1f9d1c8e708b9d71f43f1d6eb3eed07",
+      "size_bytes": 3248145
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0000946581.json",
+      "sha256": "e3358efb285aba62ca9e2c073849ca6411f9a0c04599048a118dde0ab2bb0e07",
+      "size_bytes": 3317337
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001041061.json",
+      "sha256": "5562a1496decb21dc8129dff0af281d50da52344a638def297e879eda6f35bf9",
+      "size_bytes": 3684493
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001058090.json",
+      "sha256": "93c81e4ccae99f0420863a88e05765e0dc20f043cc7bb9ec03f3c0d4b75709e5",
+      "size_bytes": 3012708
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001286681.json",
+      "sha256": "69ca22ba2b925d469a31bdf914596abe060e4e9eeb53da9a9a15a7750c5bfc24",
+      "size_bytes": 2916228
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001290677.json",
+      "sha256": "bc49b86069c1697f7b80674465cefefefa532add8bb0e4059080da9b90b36f9c",
+      "size_bytes": 2463941
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001303523.json",
+      "sha256": "739c789a5c90af1d11ad7d4b808427668186467721f9e077411e2e31d0211d9f",
+      "size_bytes": 1323765
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001326801.json",
+      "sha256": "7518e76d6dac2d016e1a3d1dec1cc55ff9ea3bdd58a151b16fcaa067a6c9d94e",
+      "size_bytes": 2746680
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001341766.json",
+      "sha256": "ada2f031b3aa5eb4928c4ad4b2a19c80a5ae43366169b56df417147847f017e7",
+      "size_bytes": 1935848
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001413329.json",
+      "sha256": "5388c14226952dd9d1f0d193f5915164425afa76ff09b69203e3b66b609026bc",
+      "size_bytes": 4130821
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001418135.json",
+      "sha256": "ada095aed6af778d3862b9fdfb75376ff216af33de7a7bf7f78f2b0fdd4d4416",
+      "size_bytes": 5131878
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001564408.json",
+      "sha256": "8618cf9ed2d5a68488682be3e8184b74557ee6c3e218fb709c2f3705d5d783d8",
+      "size_bytes": 1765262
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001618756.json",
+      "sha256": "735fa01d78ab793ccefcce3c66113191f6f6868236439093be755a283aac067f",
+      "size_bytes": 3501480
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001652044.json",
+      "sha256": "a017f26ee88cb4a639d1c1ddb06d53b4afe22f0ac89cabec7cd67c88919fe1c5",
+      "size_bytes": 3164517
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\sec\\CIK0001668717.json",
+      "sha256": "a59b21bffeb1cc21266f31e0854822b5f50a45b320a2d66f3faceddaad189fae",
+      "size_bytes": 1104287
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\simfin\\EA.json",
+      "sha256": "07adef1cbd92b792b5dd9111b1f10cd7b3b5515b5a43c7c1205f5b773ce17763",
+      "size_bytes": 98045
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\simfin\\STZ.json",
+      "sha256": "644ed32f97cbfb8905a02f97f89e75be0414573bb089929664c9bfc64e3f9888",
+      "size_bytes": 97845
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\ABI.BR.csv",
+      "sha256": "ad41d0c5dd08d32b16e731ca208f2cc275c446fd416b1a753a07ad4b3ff6af79",
+      "size_bytes": 67654
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\BATS.L.csv",
+      "sha256": "2f801af96f572cdd93b8b6fbc09dd096d47573343e5045b1c5df022339aa204a",
+      "size_bytes": 43251
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\BF-B.csv",
+      "sha256": "0fb071dc19b5af575ff90b3713bc0cd8a1b7fdca1ac27edd8771278f569e94b7",
+      "size_bytes": 67007
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\cache_coverage.json",
+      "sha256": "f03a53f9a0f1a1dbd5cebe913134f2626ad25dcd90d24b343e25e8626eced142",
+      "size_bytes": 848
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\CADUSD_eq_X.csv",
+      "sha256": "d41887a1f5e8af752a57958288c6e1d458c340b8aab288a434f22dc2c1e85471",
+      "size_bytes": 72293
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\CELH.csv",
+      "sha256": "78cee51a6cea55032c94a23310669c229735064e3713bfcbb5290df357983ca2",
+      "size_bytes": 68418
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\CMG.csv",
+      "sha256": "913d85ebb2454d6b056e34a833352f6056ad99cf8d1535237c6f8160dab30d4e",
+      "size_bytes": 68221
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\DGE.L.csv",
+      "sha256": "350eb866fa1537b534fe39f3bfc4e0a9e7109c9f0ec28b50b4924b4036a8bc4d",
+      "size_bytes": 43234
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\DPZ.csv",
+      "sha256": "505b61430028075fb518e745f02e1f5f31ae1b930a150f1d16c5f199d13fac16",
+      "size_bytes": 66888
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\EURUSD_eq_X.csv",
+      "sha256": "860f7bd4ccb8e1ea9140f4ce5633cb3b0a84ba1dcc291190be612a1d540bd58f",
+      "size_bytes": 72025
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\GBPUSD_eq_X.csv",
+      "sha256": "4f80a971ca00b7993f3dfcf9062334b03545936219e538ac0bb0be04d0c61555",
+      "size_bytes": 71941
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\GOOGL.csv",
+      "sha256": "c30dd52f90f840d4f5321aa3ef47c69cf05c70390f0c991bc5a53d62b3df049f",
+      "size_bytes": 68107
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\KDP.csv",
+      "sha256": "983aeac73a0b19ef8377fb40ad7a1c8d2527051543af2ecfb2ae425d35d8ad1b",
+      "size_bytes": 67459
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\KO.csv",
+      "sha256": "ce786f8431b80e0d34743d1bb522b9e5f934488960abee8dd5d1b60d10060f45",
+      "size_bytes": 67291
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\MCD.csv",
+      "sha256": "47b92ff04e4e611e7230c04b96435eb33b25f56023c5eb65a9fa65bd806a79ff",
+      "size_bytes": 67870
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\META.csv",
+      "sha256": "d4512d173594b1bf0958d09ce33c23f63b72e0e1caf5eff1cd1f33cccf8d8e5a",
+      "size_bytes": 67243
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\MNST.csv",
+      "sha256": "9a4fafd39f2f02b941fae3a4daced58ed7bd4745e37e9ea50f6364e129528cfd",
+      "size_bytes": 67544
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\MO.csv",
+      "sha256": "6a5dcb719184b9372666e33d544782453a254e90dd43e092808815e75f917b0d",
+      "size_bytes": 66917
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\MSFT.csv",
+      "sha256": "cc262e3f373c1fa2fab0e00f3c7628a985e81a38e734bfac7b0bfce7e4705ab6",
+      "size_bytes": 67376
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\PEP.csv",
+      "sha256": "c4ac39826a9a68fea44047f651eef432d7edb95f697faf5ce422a965794733e0",
+      "size_bytes": 68354
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\PM.csv",
+      "sha256": "edfef6000dfb49461fb9b152bca7fbec8084608f7ce77f0be6351ed597ff6d09",
+      "size_bytes": 66466
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\QSR.TO.csv",
+      "sha256": "8b4a407029326cd809fe289eeb5774eb1e66e189f590a3572723849332f77379",
+      "size_bytes": 66378
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\SNAP.csv",
+      "sha256": "6506bdea1f76d20408ae93dfe7c16bc777233e06837d4b46a0a04fdc1c273e07",
+      "size_bytes": 66154
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\STZ.csv",
+      "sha256": "0c4c878ae2ed103bb9b609c1c7e1434741f6ea389c33ff0c7e7082e4295447f3",
+      "size_bytes": 67625
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\TPB.csv",
+      "sha256": "8c9062e50ee745f03363590da6a4602240e9979cd834f69d1ac0bb9bd78967dd",
+      "size_bytes": 67163
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\TTWO.csv",
+      "sha256": "e1437ffbef4e9c6c5131a0c2d67add2c56da1fcb14dddd1fb89d4b2c8018d711",
+      "size_bytes": 67980
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\UVV.csv",
+      "sha256": "f83f447cfd40c552024254b09af4ea9c4df6545e5332f96cea237d7a451db72e",
+      "size_bytes": 66004
+    },
+    {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\source_cache\\yahoo\\YUM.csv",
+      "sha256": "b22ffc8b23efeed4a21a4c86fb822d07b2528afc9a02a839365eed7b808631e0",
+      "size_bytes": 67573
+    }
+  ],
+  "coverage": [
+    {
+      "coverage_passed": true,
+      "eligible_assets": 25,
+      "rebalance_date": "2020-01-01"
+    },
+    {
+      "coverage_passed": true,
+      "eligible_assets": 25,
+      "rebalance_date": "2021-01-01"
+    },
+    {
+      "coverage_passed": true,
+      "eligible_assets": 25,
+      "rebalance_date": "2022-01-01"
+    },
+    {
+      "coverage_passed": true,
+      "eligible_assets": 25,
+      "rebalance_date": "2023-01-01"
+    },
+    {
+      "coverage_passed": true,
+      "eligible_assets": 25,
+      "rebalance_date": "2024-01-01"
+    },
+    {
+      "coverage_passed": true,
+      "eligible_assets": 25,
+      "rebalance_date": "2025-01-01"
+    }
+  ],
+  "created_utc": "2026-08-29T12:23:15.122988+00:00",
+  "fundamentals": {
+    "path": "D:\\sin_stoks-strategy-lab\\data\\fundamentals_point_in_time.csv",
+    "sha256": "78ca01bc0a69147d89359b72d35ee4dd7a4c6a668edd308576f307fd4de7d0ec"
+  },
+  "git_commit": "8c72ea62369e6eea0c2311f040d14f6c10e0b212",
+  "issuer_configs": {
+    "BF-B": {
+      "additional_instant_share_tags": [],
+      "cik": 14693,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 2,
+      "max_share_age_days": 280,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "BF-B",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "BF-B"
+    },
+    "BTI": {
+      "additional_instant_share_tags": [],
+      "cik": 1303523,
+      "duration_share_tags": [],
+      "earnings_namespace": "ifrs-full",
+      "earnings_tags": [
+        "ProfitLossAttributableToOwnersOfParent",
+        "ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "GBP",
+      "expected_share_classes": 1,
+      "max_share_age_days": 400,
+      "price_currency": "GBP",
+      "price_scale": 0.01,
+      "price_symbol": "BATS.L",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "BTI"
+    },
+    "BUD": {
+      "additional_instant_share_tags": [],
+      "cik": 1668717,
+      "duration_share_tags": [],
+      "earnings_namespace": "ifrs-full",
+      "earnings_tags": [
+        "ProfitLossAttributableToOwnersOfParent",
+        "ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 400,
+      "price_currency": "EUR",
+      "price_scale": 1.0,
+      "price_symbol": "ABI.BR",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "BUD"
+    },
+    "CELH": {
+      "additional_instant_share_tags": [],
+      "cik": 1341766,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "CELH",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "CELH"
+    },
+    "CMG": {
+      "additional_instant_share_tags": [],
+      "cik": 1058090,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "CMG",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "CMG"
+    },
+    "DEO": {
+      "additional_instant_share_tags": [],
+      "cik": 835403,
+      "duration_share_tags": [],
+      "earnings_namespace": "ifrs-full",
+      "earnings_tags": [
+        "ProfitLossAttributableToOwnersOfParent",
+        "ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "GBP",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "GBP",
+      "price_scale": 0.01,
+      "price_symbol": "DGE.L",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "DEO"
+    },
+    "DPZ": {
+      "additional_instant_share_tags": [],
+      "cik": 1286681,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "DPZ",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "DPZ"
+    },
+    "EA": {
+      "additional_instant_share_tags": [],
+      "cik": 712515,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "EA",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": true,
+      "simfin_shares_fallback": false,
+      "ticker": "EA"
+    },
+    "GOOGL": {
+      "additional_instant_share_tags": [],
+      "cik": 1652044,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 3,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "GOOGL",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "GOOGL"
+    },
+    "KDP": {
+      "additional_instant_share_tags": [],
+      "cik": 1418135,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "KDP",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "KDP"
+    },
+    "KO": {
+      "additional_instant_share_tags": [],
+      "cik": 21344,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "KO",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "KO"
+    },
+    "MCD": {
+      "additional_instant_share_tags": [],
+      "cik": 63908,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "MCD",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "MCD"
+    },
+    "META": {
+      "additional_instant_share_tags": [],
+      "cik": 1326801,
+      "duration_share_tags": [
+        [
+          "us-gaap",
+          "WeightedAverageNumberOfDilutedSharesOutstanding"
+        ]
+      ],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 2,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "META",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "META"
+    },
+    "MNST": {
+      "additional_instant_share_tags": [],
+      "cik": 865752,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "MNST",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "MNST"
+    },
+    "MO": {
+      "additional_instant_share_tags": [],
+      "cik": 764180,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "MO",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "MO"
+    },
+    "MSFT": {
+      "additional_instant_share_tags": [],
+      "cik": 789019,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "MSFT",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "MSFT"
+    },
+    "PEP": {
+      "additional_instant_share_tags": [],
+      "cik": 77476,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "PEP",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "PEP"
+    },
+    "PM": {
+      "additional_instant_share_tags": [],
+      "cik": 1413329,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "PM",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "PM"
+    },
+    "QSR": {
+      "additional_instant_share_tags": [],
+      "cik": 1618756,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 280,
+      "price_currency": "CAD",
+      "price_scale": 1.0,
+      "price_symbol": "QSR.TO",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "QSR"
+    },
+    "SNAP": {
+      "additional_instant_share_tags": [
+        [
+          "us-gaap",
+          "SharesOutstanding"
+        ]
+      ],
+      "cik": 1564408,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 3,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "SNAP",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "SNAP"
+    },
+    "STZ": {
+      "additional_instant_share_tags": [],
+      "cik": 16918,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "STZ",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": true,
+      "ticker": "STZ"
+    },
+    "TPB": {
+      "additional_instant_share_tags": [],
+      "cik": 1290677,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "TPB",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "TPB"
+    },
+    "TTWO": {
+      "additional_instant_share_tags": [],
+      "cik": 946581,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "TTWO",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "TTWO"
+    },
+    "UVV": {
+      "additional_instant_share_tags": [],
+      "cik": 102037,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "UVV",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "UVV"
+    },
+    "YUM": {
+      "additional_instant_share_tags": [],
+      "cik": 1041061,
+      "duration_share_tags": [],
+      "earnings_namespace": "us-gaap",
+      "earnings_tags": [
+        "NetIncomeLossAvailableToCommonStockholdersBasic",
+        "NetIncomeLoss",
+        "ProfitLoss"
+      ],
+      "earnings_unit": "USD",
+      "expected_share_classes": 1,
+      "max_share_age_days": 200,
+      "price_currency": "USD",
+      "price_scale": 1.0,
+      "price_symbol": "YUM",
+      "share_aggregation": "reconcile",
+      "simfin_price_fallback": false,
+      "simfin_shares_fallback": false,
+      "ticker": "YUM"
+    }
+  },
+  "methodology": "sec-yahoo-simfin-v2",
+  "rebalance_years": [
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "rows": {
+    "coverage": 6,
+    "errors": 0,
+    "fundamentals": 150
+  },
+  "sec": {
+    "companyfacts_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json",
+    "user_agent_sha256": "1d536ac4ff85ff699c22a3d012579ea62a97cb1269cd2c75d55726ded59fbed1"
+  },
+  "simfin": {
+    "approved_price_fallbacks": [
+      "EA"
+    ],
+    "approved_share_fallbacks": [
+      "STZ"
+    ],
+    "prices_url": "https://backend.simfin.com/api/v3/companies/prices/compact"
+  },
+  "yahoo": {
+    "auto_adjust": false,
+    "end": "2026-01-02",
+    "fx_symbols": [
+      "CADUSD=X",
+      "EURUSD=X",
+      "GBPUSD=X"
+    ],
+    "price_symbols": [
+      "ABI.BR",
+      "BATS.L",
+      "BF-B",
+      "CELH",
+      "CMG",
+      "DGE.L",
+      "DPZ",
+      "EA",
+      "GOOGL",
+      "KDP",
+      "KO",
+      "MCD",
+      "META",
+      "MNST",
+      "MO",
+      "MSFT",
+      "PEP",
+      "PM",
+      "QSR.TO",
+      "SNAP",
+      "STZ",
+      "TPB",
+      "TTWO",
+      "UVV",
+      "YUM"
+    ],
+    "start": "2017-01-01"
+  }
+}

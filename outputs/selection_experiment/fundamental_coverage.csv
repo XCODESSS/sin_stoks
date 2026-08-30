@@ -1,0 +1,13 @@
+strategy,rebalance_date,fundamental_coverage
+Density Selection,2020-01-01,0.8333333333333334
+Density Selection,2021-01-01,0.8333333333333334
+Density Selection,2022-01-01,0.8333333333333334
+Density Selection,2023-01-01,0.8333333333333334
+Density Selection,2024-01-01,0.8333333333333334
+Density Selection,2025-01-01,0.8333333333333334
+Partitioning Selection,2020-01-01,0.8333333333333334
+Partitioning Selection,2021-01-01,0.8333333333333334
+Partitioning Selection,2022-01-01,0.8333333333333334
+Partitioning Selection,2023-01-01,0.8333333333333334
+Partitioning Selection,2024-01-01,0.8333333333333334
+Partitioning Selection,2025-01-01,0.8333333333333334
