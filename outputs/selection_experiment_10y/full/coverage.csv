@@ -1,0 +1,11 @@
+rebalance_date,price_eligible_assets,fundamental_eligible_assets,allocation_estimation_weeks,coverage_vs_frozen_universe,frozen_80pct_gate_passed
+2016-01-01,26,15,142,0.5,False
+2017-01-01,27,17,107,0.5666666666666667,False
+2018-01-01,27,18,159,0.6,False
+2019-01-01,28,21,137,0.7,False
+2020-01-01,29,24,147,0.8,True
+2021-01-01,29,24,199,0.8,True
+2022-01-01,29,24,252,0.8,True
+2023-01-01,29,24,304,0.8,True
+2024-01-01,29,24,356,0.8,True
+2025-01-01,29,24,408,0.8,True

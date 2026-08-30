@@ -1,0 +1,26 @@
+{
+  "all_frozen_coverage_gates_passed": false,
+  "classification": "exploratory-invalid-under-frozen-coverage-gate",
+  "created_utc": "2026-08-30T09:08:30.370627+00:00",
+  "exclusions": [
+    "CELH"
+  ],
+  "fundamentals_path": "D:\\sin_stoks-strategy-lab\\outputs\\selection_experiment_10y\\feasibility_fundamentals.csv",
+  "fundamentals_sha256": "7e0b135ac86cdbb5230fee9ad25ae1db722dc50f0f29dc8e556042c02078dfa2",
+  "lookback_weeks": 104,
+  "market_end": "2026-01-01",
+  "market_start": "2011-01-01",
+  "minimum_coverage": 0.5,
+  "rebalance_years": [
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ]
+}

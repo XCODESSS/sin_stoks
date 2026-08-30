@@ -1,0 +1,29 @@
+rebalance_date,ticker,stage,error
+2016-01-01,BTI,ValueError,No TTM earnings for BTI before 2016-01-01: ProfitLossAttributableToOwnersOfParent: no eligible annual fact; ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity: no eligible annual fact; ProfitLoss: no eligible annual fact
+2016-01-01,BUD,ValueError,No TTM earnings for BUD before 2016-01-01: ProfitLossAttributableToOwnersOfParent: no eligible annual fact; ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity: no eligible annual fact; ProfitLoss: no eligible annual fact
+2016-01-01,CELH,ValueError,No TTM earnings for CELH before 2016-01-01: NetIncomeLossAvailableToCommonStockholdersBasic: no eligible annual fact; NetIncomeLoss: no eligible annual fact; ProfitLoss: no eligible annual fact
+2016-01-01,DEO,ValueError,No TTM earnings for DEO before 2016-01-01: ProfitLossAttributableToOwnersOfParent: no eligible annual fact; ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity: no eligible annual fact; ProfitLoss: no eligible annual fact
+2016-01-01,EA,ValueError,No SimFin close for EA before 2016-01-01
+2016-01-01,GOOGL,ValueError,No TTM earnings for GOOGL before 2016-01-01: NetIncomeLossAvailableToCommonStockholdersBasic: no eligible annual fact; NetIncomeLoss: no eligible annual fact; ProfitLoss: Missing SEC fact us-gaap.ProfitLoss in unit USD
+2016-01-01,SNAP,ValueError,No TTM earnings for SNAP before 2016-01-01: NetIncomeLossAvailableToCommonStockholdersBasic: Missing SEC fact us-gaap.NetIncomeLossAvailableToCommonStockholdersBasic in unit USD; NetIncomeLoss: no eligible annual fact; ProfitLoss: no eligible annual fact
+2016-01-01,STZ,ValueError,No SimFin common shares for STZ before 2016-01-01
+2016-01-01,TPB,ValueError,No TTM earnings for TPB before 2016-01-01: NetIncomeLossAvailableToCommonStockholdersBasic: Missing SEC fact us-gaap.NetIncomeLossAvailableToCommonStockholdersBasic in unit USD; NetIncomeLoss: no eligible annual fact; ProfitLoss: no eligible annual fact
+2017-01-01,BTI,ValueError,No TTM earnings for BTI before 2017-01-01: ProfitLossAttributableToOwnersOfParent: no eligible annual fact; ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity: no eligible annual fact; ProfitLoss: no eligible annual fact
+2017-01-01,BUD,ValueError,No TTM earnings for BUD before 2017-01-01: ProfitLossAttributableToOwnersOfParent: no eligible annual fact; ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity: no eligible annual fact; ProfitLoss: no eligible annual fact
+2017-01-01,CELH,ValueError,No TTM earnings for CELH before 2017-01-01: NetIncomeLossAvailableToCommonStockholdersBasic: no eligible annual fact; NetIncomeLoss: no eligible annual fact; ProfitLoss: no eligible annual fact
+2017-01-01,DEO,ValueError,No TTM earnings for DEO before 2017-01-01: ProfitLossAttributableToOwnersOfParent: no eligible annual fact; ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity: no eligible annual fact; ProfitLoss: no eligible annual fact
+2017-01-01,EA,ValueError,No SimFin close for EA before 2017-01-01
+2017-01-01,SNAP,ValueError,No TTM earnings for SNAP before 2017-01-01: NetIncomeLossAvailableToCommonStockholdersBasic: Missing SEC fact us-gaap.NetIncomeLossAvailableToCommonStockholdersBasic in unit USD; NetIncomeLoss: no eligible annual fact; ProfitLoss: no eligible annual fact
+2017-01-01,STZ,ValueError,No SimFin common shares for STZ before 2017-01-01
+2017-01-01,TPB,ValueError,No TTM earnings for TPB before 2017-01-01: NetIncomeLossAvailableToCommonStockholdersBasic: Missing SEC fact us-gaap.NetIncomeLossAvailableToCommonStockholdersBasic in unit USD; NetIncomeLoss: no eligible annual fact; ProfitLoss: no eligible annual fact
+2018-01-01,BTI,ValueError,No TTM earnings for BTI before 2018-01-01: ProfitLossAttributableToOwnersOfParent: no eligible annual fact; ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity: no eligible annual fact; ProfitLoss: no eligible annual fact
+2018-01-01,BUD,ValueError,No TTM earnings for BUD before 2018-01-01: ProfitLossAttributableToOwnersOfParent: no eligible annual fact; ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity: no eligible annual fact; ProfitLoss: no eligible annual fact
+2018-01-01,DEO,ValueError,No TTM earnings for DEO before 2018-01-01: ProfitLossAttributableToOwnersOfParent: no eligible annual fact; ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity: no eligible annual fact; ProfitLoss: no eligible annual fact
+2018-01-01,EA,ValueError,No SimFin close for EA before 2018-01-01
+2018-01-01,SNAP,ValueError,No TTM earnings for SNAP before 2018-01-01: NetIncomeLossAvailableToCommonStockholdersBasic: Missing SEC fact us-gaap.NetIncomeLossAvailableToCommonStockholdersBasic in unit USD; NetIncomeLoss: no eligible annual fact; ProfitLoss: no eligible annual fact
+2018-01-01,STZ,ValueError,No SimFin common shares for STZ before 2018-01-01
+2018-01-01,TPB,ValueError,No filed shares for TPB before 2018-01-01: dei.EntityCommonStockSharesOutstanding: no eligible filed shares; us-gaap.CommonStockSharesOutstanding: Missing SEC fact us-gaap.CommonStockSharesOutstanding in unit shares
+2019-01-01,EA,ValueError,No SimFin close for EA before 2019-01-01
+2019-01-01,SNAP,ValueError,Filed shares for SNAP are 365 days from the price date; allowed range is 0-200 days
+2019-01-01,STZ,ValueError,No SimFin common shares for STZ before 2019-01-01
+2019-01-01,TPB,ValueError,No filed shares for TPB before 2019-01-01: dei.EntityCommonStockSharesOutstanding: no eligible filed shares; us-gaap.CommonStockSharesOutstanding: Missing SEC fact us-gaap.CommonStockSharesOutstanding in unit shares

@@ -6,6 +6,7 @@ __pycache__/
 # Testing & Linting
 .pytest_cache/
 .ruff_cache/
+outputs/pytest_tmp/
 .coverage
 htmlcov/
 
