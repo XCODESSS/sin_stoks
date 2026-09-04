@@ -1,0 +1,2 @@
+rebalance_date,expected_assets,automated_candidates,eligible_assets,coverage,minimum_required_assets,coverage_passed,missing_tickers,failed_tickers
+2020-01-01,30,25,24,0.8,24,True,"M0, M1, M2, M3, M4, T24",T24

@@ -1,0 +1,14 @@
+ticker,observation_date,available_date,trailing_pe,market_cap,earnings_positive,source
+A,2019-09-30,2019-11-01,15.0,1000000000,True,Synthetic filing
+A,2020-09-30,2020-11-01,14.0,1100000000,True,Synthetic filing
+B,2019-09-30,2019-11-02,20.0,2000000000,True,Synthetic filing
+B,2020-09-30,2020-11-02,18.0,2200000000,True,Synthetic filing
+C,2019-09-30,2019-11-03,,500000000,False,Synthetic filing
+C,2020-09-30,2020-11-03,-4.0,550000000,False,Synthetic filing
+D,2019-09-30,2019-11-04,12.0,3000000000,True,Synthetic filing
+D,2020-09-30,2020-11-04,11.0,3200000000,True,Synthetic filing
+E,2019-09-30,2019-11-05,25.0,700000000,True,Synthetic filing
+E,2021-03-31,2021-05-01,22.0,750000000,True,Synthetic filing
+F,2019-09-30,2019-11-06,30.0,900000000,True,Synthetic filing
+F,2020-12-31,2021-02-15,28.0,950000000,True,Synthetic filing
+A,2019-09-30,2019-11-01,15.0,1000000000,True,Synthetic filing

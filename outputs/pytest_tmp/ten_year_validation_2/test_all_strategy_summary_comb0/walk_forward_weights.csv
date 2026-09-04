@@ -1,0 +1,13 @@
+Rebalance Date,Strategy,A,B
+2020-01-03,Equal Weight,0.5,0.5
+2021-01-03,Equal Weight,0.5,0.5
+2022-01-03,Equal Weight,0.5,0.5
+2023-01-03,Equal Weight,0.5,0.5
+2024-01-03,Equal Weight,0.5,0.5
+2025-01-03,Equal Weight,0.5,0.5
+2020-01-03,Existing Strategy,0.5,0.5
+2021-01-03,Existing Strategy,0.5,0.5
+2022-01-03,Existing Strategy,0.5,0.5
+2023-01-03,Existing Strategy,0.5,0.5
+2024-01-03,Existing Strategy,0.5,0.5
+2025-01-03,Existing Strategy,0.5,0.5

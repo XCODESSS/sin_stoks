@@ -1,0 +1,2 @@
+ticker,observation_date,available_date,trailing_pe,market_cap,earnings_positive,source,rebalance_date,price_date,earnings_available_date,shares_available_date,cik,spot_fx_to_usd,shares_component_count,filed_shares,trailing_earnings_usd
+A,2019-09-30,2019-12-30,15.0,1000000000,True,Synthetic filing,2020-01-01,2019-12-30,2019-11-01,2019-11-05,1234,1.0,1,100.0,10.0

@@ -1,0 +1,2 @@
+rebalance_date,ticker,stage,error
+2020-01-01,T24,ValueError,missing

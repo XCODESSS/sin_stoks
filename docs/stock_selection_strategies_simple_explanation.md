@@ -33,7 +33,7 @@ This is the walk-forward part of the experiment. The strategy moves through time
 
 ## Step 2: Create three simple ranks for each stock
 
-I convert the raw information into ranks because market capitalization, P/E ratios, and Sharpe ratios use very different scales. A rank near 1 means the stock ranks highly compared with the other eligible stocks at that rebalance.
+I convert the raw information into ranks for each stock. The market capitalization, P/E ratios, and Sharpe ratios use very different scales. A rank near 1 means the stock ranks highly compared with the other eligible stocks at that rebalance.
 
 ### Value rank
 
@@ -88,7 +88,7 @@ I tell PAM to divide the eligible stocks into six groups. The process is:
 
 1. Build the stock-to-stock distance matrix.
 2. Split the stocks into six clusters.
-3. Rank the stocks inside each cluster using the basic value-and-Sharpe score.
+3. Rank the stocks inside each cluster using the selection score.
 4. Take up to the two highest-scoring stocks from each cluster.
 5. If fewer than 12 stocks have been selected, fill the remaining spaces using the diversification rule.
 
@@ -148,13 +148,13 @@ The strategy does not keep a stock forever just because it performed well once.
 CELH shows that the strategies were making changing walk-forward decisions rather than permanently holding the eventual winner.
 
 | Rebalance year | Partitioning Selection | Density Selection |
-|---|---:|---:|
-| 2020 | Not selected | Selected |
-| 2021 | Selected | Selected |
-| 2022 | Selected | Not selected |
-| 2023 | Not selected | Not selected |
-| 2024 | Not selected | Selected |
-| 2025 | Not selected | Not selected |
+| -------------- | ---------------------: | ----------------: |
+| 2020           |           Not selected |          Selected |
+| 2021           |               Selected |          Selected |
+| 2022           |               Selected |      Not selected |
+| 2023           |           Not selected |      Not selected |
+| 2024           |           Not selected |          Selected |
+| 2025           |           Not selected |      Not selected |
 
 Partitioning did not select CELH in January 2020, when its trailing Sharpe rank was only 36% relative to the eligible stocks. It selected CELH in 2021 and 2022 after the stock's trailing Sharpe rank improved.
 
@@ -175,7 +175,7 @@ I compared the new selectors with:
 - Maximum Diversification;
 - Minimum Variance;
 - Risk Parity;
-- Inverse Volatility; and
+- Inverse Volatility;
 - Hierarchical Risk Parity.
 
 The eligible-universe equal-weight portfolio is especially important. It shows whether the selector added value compared with simply buying every stock for which the same point-in-time fundamental data was available.

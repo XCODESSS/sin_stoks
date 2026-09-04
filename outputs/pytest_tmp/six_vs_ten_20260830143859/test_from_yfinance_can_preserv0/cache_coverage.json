@@ -1,0 +1,17 @@
+{
+  "available_symbols": [
+    "TEST",
+    "CADUSD=X",
+    "EURUSD=X",
+    "GBPUSD=X"
+  ],
+  "requested_end": "2026-01-02",
+  "requested_start": "2017-01-01",
+  "symbols": [
+    "TEST",
+    "QSR.TO",
+    "CADUSD=X",
+    "EURUSD=X",
+    "GBPUSD=X"
+  ]
+}

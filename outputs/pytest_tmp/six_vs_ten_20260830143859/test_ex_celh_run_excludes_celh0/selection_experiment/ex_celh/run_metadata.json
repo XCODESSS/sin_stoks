@@ -1,0 +1,40 @@
+{
+  "asset_count": 29,
+  "asset_return_end": "2025-12-26T00:00:00",
+  "asset_return_rows": 469,
+  "asset_return_start": "2017-01-06T00:00:00",
+  "exclusions": [
+    "CELH"
+  ],
+  "git_commit": "cfd23cfbba45832602ff241e0c05489011df677a",
+  "inputs": {
+    "asset_returns": {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\weekly_returns.csv",
+      "sha256": "1ba4e8158e472cae18174437b5ca8299f98f4b6611ab3d3c27e1dfa13137e203"
+    },
+    "fundamentals": {
+      "path": "D:\\sin_stoks-strategy-lab\\outputs\\pytest_tmp\\six_vs_ten_20260830143859\\test_ex_celh_run_excludes_celh0\\fundamentals.csv",
+      "sha256": "6a692566948c533f9a8ea7e3f6f9ae7d2d8d29f38ac70330368502a98000d86a"
+    },
+    "spy_returns": {
+      "path": "D:\\sin_stoks-strategy-lab\\data\\spy_weekly_returns.csv",
+      "sha256": "24793d76ce858f6140e1886293518d5b8a361e1a6cb3cac491e6b680f324f1ff"
+    }
+  },
+  "parameters": {
+    "cluster_count": 6,
+    "correlation_weight": 0.5,
+    "diversification_penalty": 0.25,
+    "feature_weight": 0.5,
+    "lookback_weeks": 104,
+    "max_weight": 0.25,
+    "min_cluster_size": 3,
+    "min_coverage": 0.8,
+    "min_samples": 3,
+    "target_count": 12
+  },
+  "spy_return_end": "2025-12-26T00:00:00",
+  "spy_return_rows": 469,
+  "spy_return_start": "2017-01-06T00:00:00",
+  "timestamp_utc": "2026-08-30T09:09:45.693411+00:00"
+}

@@ -1,0 +1,2 @@
+ticker,observation_date,available_date,trailing_pe,market_cap,earnings_positive,source,rebalance_date
+A,2019-09-30,2019-11-01,15.0,1000000000,True,Synthetic filing,2019-11-01
